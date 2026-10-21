@@ -197,7 +197,8 @@ function buildRoom(){
   };
   // Construct a physical opening rather than overlaying a glass rectangle on a solid wall.
   // Direct sunlight can therefore cast a correctly positioned patch through the window.
-  const back=new THREE.Group();back.name='back-wall';back.position.set(0,0,-D/2);roomGroup.add(back);  wallParts.push({hinge:back,foldAxis:'x',foldTarget:-Math.PI/2,seeThrough:false});
+  const back=new THREE.Group();back.name='back-wall';back.position.set(0,0,-D/2);roomGroup.add(back);
+  wallParts.push({hinge:back,foldAxis:'x',foldTarget:-Math.PI/2,seeThrough:false});
   const winW=Math.min(state.windowWidth,W-.6),winH=Math.min(1.25,H-1.19),sill=.93;
   const winX=clamp(state.windowPosition/100*(W/2),-W/2+winW/2+.15,W/2-winW/2-.15);
   const l=winX-winW/2,r=winX+winW/2;
@@ -396,7 +397,8 @@ function updateSelection(){
     $('object-depth').value=Math.round(item.depthScale*100);$('object-depth-value').textContent=`${Math.round(item.depthScale*100)}%`;
     $('object-footprint').textContent=`实际占地：${w.toFixed(2)} × ${d.toFixed(2)} 米`;
     const dir=directionOf(item.group.position.x,item.group.position.z);
-    $('selected-direction').textContent=dir==='中'?'位于房间中心':`传统方位：${dir}`;    selectionHelper=new THREE.BoxHelper(item.group,0xAC8E62);selectionHelper.material.transparent=true;selectionHelper.material.opacity=.72;scene.add(selectionHelper);
+    $('selected-direction').textContent=dir==='中'?'位于房间中心':`传统方位：${dir}`;
+    selectionHelper=new THREE.BoxHelper(item.group,0xAC8E62);selectionHelper.material.transparent=true;selectionHelper.material.opacity=.72;scene.add(selectionHelper);
   }
   refreshFurnitureList();updateGuidance();refreshFlowHeat();
 }
@@ -595,7 +597,8 @@ function updateGuidance(){
     if(state.selected){
       const d=directionOf(state.selected.group.position.x,state.selected.group.position.z);
       const rec=fengDirections.find(v=>v.key===d);
-      items.push(['⌖',`${state.selected.name} · ${d==='中'?'中宫':d+'位'}`,rec?`${rec.symbol}卦，五行属${rec.element}；${rec.meaning}。这仅是传统象征，并非效果承诺。`:'中宫在传统八卦中象征空间中心，优先保持灵活通行。']);    }else items.push(['⌖','先选择一件家具','点击场景中的家具，查看它相对罗盘的传统方位与文化象征。']);
+      items.push(['⌖',`${state.selected.name} · ${d==='中'?'中宫':d+'位'}`,rec?`${rec.symbol}卦，五行属${rec.element}；${rec.meaning}。这仅是传统象征，并非效果承诺。`:'中宫在传统八卦中象征空间中心，优先保持灵活通行。']);
+    }else items.push(['⌖','先选择一件家具','点击场景中的家具，查看它相对罗盘的传统方位与文化象征。']);
     items.push(['◈','北 · 坎 / 水','传统上对应流动与事业等象征，并不表示北边摆放某个物件就能改变运势。']);
     items.push(['✧','东 · 震 / 木','传统上关联生长。摆放绿植时，更应看真实日照和植物养护需求。']);
     items.push(['☼','南 · 离 / 火','传统中象征明亮。现代设计中请优先保证充足且舒适的照明。']);
@@ -794,7 +797,8 @@ function setupEvents(){
   document.querySelectorAll('#layout-variants button').forEach(b=>b.addEventListener('click',()=>applyArrangement(Number(b.dataset.layout))));
   document.querySelectorAll('#view-buttons button').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
   $('unfold-walls').addEventListener('change',e=>{state.unfolded=e.target.checked;updateWallFolds()});
-  $('feng-overlay').addEventListener('change',e=>{state.overlays=e.target.checked;fengGroup.visible=state.overlays});  $('flow-overlay').addEventListener('change',e=>{state.flowVisible=e.target.checked;syncFlowUI()});
+  $('feng-overlay').addEventListener('change',e=>{state.overlays=e.target.checked;fengGroup.visible=state.overlays});
+  $('flow-overlay').addEventListener('change',e=>{state.flowVisible=e.target.checked;syncFlowUI()});
   $('flow-heat').addEventListener('change',e=>{state.flowHeat=e.target.checked;syncFlowUI();refreshFlowHeat()});
   $('flow-speed').addEventListener('input',e=>{state.flowSpeed=Number(e.target.value);syncFlowUI()});
   $('flow-density').addEventListener('input',e=>{state.flowDensity=Number(e.target.value);rebuildFlow();syncFlowUI()});
@@ -993,7 +997,8 @@ function updateBaguaKnowledge(){
   const chosen=BAGUA[state.chosenBagua]||BAGUA[0];
   document.querySelectorAll('#bagua-selector button').forEach(b=>b.classList.toggle('active',Number(b.dataset.bagua)===state.chosenBagua));
   const root=$('bagua-detail');root.replaceChildren();
-  const head=el('div','detail-head');head.append(el('h4','',chosen.glyph+' '+chosen.direction+' · '+chosen.trigram+'卦'),el('span','tag',chosen.element+' · '+chosen.image));root.append(head);  root.append(el('p','',chosen.meaning),el('p','',chosen.placement),el('p','safety','现实提醒：'+chosen.tip));
+  const head=el('div','detail-head');head.append(el('h4','',chosen.glyph+' '+chosen.direction+' · '+chosen.trigram+'卦'),el('span','tag',chosen.element+' · '+chosen.image));root.append(head);
+  root.append(el('p','',chosen.meaning),el('p','',chosen.placement),el('p','safety','现实提醒：'+chosen.tip));
 }
 function updateElementKnowledge(){
   const d=FIVE_ELEMENTS.find(x=>x.name===state.chosenElement)||FIVE_ELEMENTS[0];
