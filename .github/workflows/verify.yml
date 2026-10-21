@@ -1,4 +1,4 @@
-name: Verify Qixu V4
+name: Verify Qixu V5
 on:
   push:
   pull_request:
@@ -19,3 +19,4 @@ jobs:
           node tests/feng-model.test.mjs
           node tests/space-model.test.mjs
           node tests/history-model.test.mjs
+          node tests/connected-layout.test.mjs
