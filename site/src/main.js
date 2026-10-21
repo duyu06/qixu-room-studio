@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { attachBlueprint } from './blueprint-addon.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { BAGUA, FIVE_ELEMENTS, SHENG, KE, roomTips, fieldVector, directionRecord } from './feng-model.js';
@@ -1098,7 +1099,7 @@ function boot(){
   orbit.screenSpacePanning=false;orbit.enablePan=true;
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),material('#E8EAE4',.96));
   floor.rotation.x=-Math.PI/2;floor.position.y=-.16;floor.receiveShadow=true;scene.add(floor);foregroundFloor=floor;
-  makeLights();buildRoom();resetPreset('living',true);resetPreset('bedroom',true);resetPreset('study',true);setupEvents();chooseRoom('living',{quiet:true});updateCompass();setLight('day');
+  makeLights();buildRoom();resetPreset('living',true);resetPreset('bedroom',true);resetPreset('study',true);setupEvents();attachBlueprint({THREE,scene,camera,orbit,renderer,state});chooseRoom('living',{quiet:true});updateCompass();setLight('day');
   orbit.maxDistance=30;setCameraView('perspective');
   try{
     const saved=localStorage.getItem(STORAGE_KEY);

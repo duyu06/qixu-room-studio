@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f7f6f2" />
-  <title>栖序 V5 · 整屋联通设计实验室</title>
+  <title>栖序 V6 · 户型图识别实验室</title>
   <meta name="description" content="上传一张房间照片，建立可编辑的 3D 装修空间，布置家具，探索传统风水八方方位。" />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./feng-v3.css" />
@@ -23,7 +23,7 @@
   <div class="app-shell">
     <header class="site-header">
       <div class="brand"><span class="brand-logo"><span></span><span></span><span></span></span><div><b>栖序</b><small>SPACE ATELIER</small></div></div>
-      <div class="header-center"><span class="live-dot"></span> 交互式空间设计实验室 <span class="sep"></span> VERSION / 005</div>
+      <div class="header-center"><span class="live-dot"></span> 交互式空间设计实验室 <span class="sep"></span> VERSION / 006</div>
       <div class="header-actions"><span class="save-indicator" id="save-notice" role="status">本地自动保存已准备</span><button class="btn subtle small" id="import-project">↑ 导入方案</button><input type="file" id="project-file" accept="application/json,.json" hidden /><button class="btn subtle small" id="export-project">↓ 导出方案</button></div>
     </header>
     <div class="content-grid">
@@ -35,11 +35,11 @@
             <input id="photo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden />
             <span class="upload-image" id="photo-preview" hidden></span>
             <span class="upload-icon" id="upload-icon">＋</span>
-            <span class="upload-main" id="upload-main">上传房间照片</span>
+            <span class="upload-main" id="upload-main">上传户型平面图</span>
             <span class="upload-help" id="upload-help">点击选择或拖放图片 · JPG / PNG / WebP</span>
           </label>
-          <div class="analysis-card" id="analysis-card" hidden><div class="analysis-head"><span class="live-dot"></span> <b>参考照片已解析</b></div><div class="analysis-body">已提取参考配色，并构建可编辑的估算空间。实际墙角和尺寸仍需人工校准。</div><div id="palette-swatches" class="palette-swatches"></div></div>
-          <p class="quiet-note" id="upload-note">无需上传即可体验预设房间。照片只在本地浏览器中处理。</p>
+          <div class="analysis-card" id="analysis-card" hidden><div class="analysis-head"><span class="live-dot"></span> <b>户型图预览</b></div><div class="analysis-body">上传户型图后将生成墙体初稿；必须人工复核尺寸、门洞及承重结构。</div><div id="palette-swatches" class="palette-swatches"></div></div>
+          <p class="quiet-note" id="upload-note">无需上传即可体验预设房间。户型图只在本地浏览器中处理。</p>
         </section>
         <section class="editor-section">
           <div class="section-heading"><div><span class="section-index">02</span><strong>选择编辑房间</strong></div><span class="secondary-cap">LAYOUT</span></div>
@@ -81,7 +81,7 @@
         <div class="left-footnote">栖序 · 将设计还给生活 <span>EST. 2026</span></div>
       </aside>
       <main class="workspace">
-        <div class="workspace-top"><div><span class="breadcrumbs">设计工作台 <span>/</span> 场景预览</span><h2>我的理想空间 <span class="tag">LIVE 3D / V5</span></h2></div><div class="top-buttons"><button class="btn subtle" id="undo-edit" disabled title="撤销 Ctrl+Z">↶ 撤销</button><button class="btn subtle" id="redo-edit" disabled title="重做 Ctrl+Y">↷ 重做</button><button class="btn subtle" id="reset-scene">↺ 重置当前房间</button><button class="btn dark" id="save-image">▧ 保存效果图</button></div></div>
+        <div class="workspace-top"><div><span class="breadcrumbs">设计工作台 <span>/</span> 场景预览</span><h2>我的理想空间 <span class="tag">LIVE 3D / V6</span></h2></div><div class="top-buttons"><button class="btn subtle" id="undo-edit" disabled title="撤销 Ctrl+Z">↶ 撤销</button><button class="btn subtle" id="redo-edit" disabled title="重做 Ctrl+Y">↷ 重做</button><button class="btn subtle" id="reset-scene">↺ 重置当前房间</button><button class="btn dark" id="save-image">▧ 保存效果图</button></div></div>
         <div class="canvas-card">
           <div class="canvas-topbar"><div class="view-buttons" id="view-buttons"><button class="active" data-view="perspective">透视视角</button><button data-view="top">平面俯视</button><button data-view="front">正面视角</button></div><div class="canvas-flag"><span class="live-dot"></span> 实时渲染</div></div>
           <div class="viewport" id="viewport">
