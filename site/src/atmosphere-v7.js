@@ -6,7 +6,7 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
   const $ = (id) => document.getElementById(id);
   let plan = null, world = null, field = null, spots = [], particles = null;
   let particlePositions = null, particleColors = null, seeds = [];
-  let elapsed = 0, frameId = 0, lastNow = 0, lastLightKey = '';
+  let elapsed = 0, frameId = 0, lastNow = 0, lastLightKey = '', lightAutoplay = false, lightAccum = 0;
   let wallMode = 'cutaway', flowMode = 'qi';
   const L = new THREE.DirectionalLight(0xffefcd, 2.3);
   L.castShadow = true;
@@ -28,7 +28,7 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     '<div class="v7-heading"><span class="v7-pill">V7 · 实时场景</span><b>光影 · 八方流动</b></div>' +
     '<div class="v7-line"><label for="v7-daytime">太阳时刻</label><b id="v7-time-label">12:00</b></div>' +
     '<input id="v7-daytime" type="range" min="6" max="20" step=".5" value="12" aria-label="日照时间">' +
-    '<div class="v7-choices" id="v7-quick"><button type="button" data-hour="8">晨光</button><button type="button" data-hour="12">正午</button><button type="button" data-hour="17">夕照</button><button type="button" data-hour="20">夜景</button></div>' +
+    '<div class="v7-choices" id="v7-quick"><button type="button" data-hour="8">晨光</button><button type="button" data-hour="12">正午</button><button type="button" data-hour="17">夕照</button><button type="button" data-hour="20">夜景</button><button type="button" id="v7-autoplay">▶ 演示</button></div>' +
     '<div class="v7-line v7-separate"><label>墙体视觉</label><span class="v7-sub">不改变实际墙线</span></div>' +
     '<div class="v7-choices" id="v7-wall-choices"><button type="button" class="active" data-wall="cutaway">暖白剖切</button><button type="button" data-wall="solid">真实立面</button><button type="button" data-wall="ghost">轻透墙</button></div>' +
     '<div class="v7-line v7-separate"><label>动态八卦</label><span class="v7-sub" id="v7-flow-label">持续流动</span></div>' +
@@ -52,6 +52,12 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     const b = e.target.closest('[data-hour]'); if (!b) return;
     hourInput.value = b.dataset.hour;
     hourInput.dispatchEvent(new Event('input'));
+  });
+  panel.querySelector('#v7-autoplay').addEventListener('click', () => {
+    lightAutoplay = !lightAutoplay;
+    panel.querySelector('#v7-autoplay').textContent = lightAutoplay ? 'Ⅱ 暂停' : '▶ 演示';
+    panel.querySelector('#v7-autoplay').classList.toggle('active', lightAutoplay);
+    lightAccum = 0;
   });
   panel.querySelector('#v7-wall-choices').addEventListener('click', e => {
     const b = e.target.closest('[data-wall]'); if (!b) return;
@@ -185,12 +191,15 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     }
     lastLightKey=''; updateLighting(true);
   }
+  function dayTimeBackground(hour){return hour>=18||hour<=6?'#e3ded5':'#fcfaf3';}
   function updateLighting(force=false){
     if (!plan) return;
     const hour=Number(state.sunHour),mode=state.light;
     const key=[hour,mode,state.daylight,state.lampPower,state.north,state.lightKelvin,state.sunOverlay].join('|');
     if (!force&&key===lastLightKey)return;
     lastLightKey=key; hourInput.value=hour;
+    scene.background.set(dayTimeBackground(hour)); scene.fog=null;
+    renderer.toneMappingExposure=1.25;
     const hh=Math.floor(hour),mm=hour%1?'30':'00';
     timeLabel.textContent=String(hh).padStart(2,'0')+':'+mm;
     panel.querySelectorAll('[data-hour]').forEach(b=>b.classList.toggle('active',Number(b.dataset.hour)===hour));
@@ -223,6 +232,14 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     frameId=requestAnimationFrame(animate);
     if(!plan || document.hidden)return;
     const dt=Math.min(.05,Math.max(0,(now-lastNow)/1000));lastNow=now;
+    if(lightAutoplay){
+      lightAccum += dt;
+      if(lightAccum >= .65){
+        lightAccum = 0;
+        hourInput.value = Number(state.sunHour) >= 20 ? 6 : Number(state.sunHour) + .5;
+        hourInput.dispatchEvent(new Event('input'));
+      }
+    }
     updateLighting();
     if (!particles || !field)return;
     field.visible=flowToggle.checked;
