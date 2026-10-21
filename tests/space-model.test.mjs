@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {pointBlocked,findWalkway,calculateClearanceRatio} from '../site/src/space-model.js';
+const room={width:4.8,depth:4.2,windowX:0};
+assert.equal(pointBlocked(0,0,[]),false);
+assert.equal(pointBlocked(0,0,[{type:'sofa',x:0,z:0,w:2,d:1,rotation:0}]),true);
+assert.equal(pointBlocked(0,0,[{type:'rug',x:0,z:0,w:2,d:1}]),false);
+assert.equal(pointBlocked(1.5,1.5,[{type:'sofa',x:0,z:0,w:2,d:1}]),false);
+let route=findWalkway(room,[]);assert(route.ok);assert(route.length>3);assert(route.points.length>=2);
+const barrier=[{type:'screen',x:0,z:0,w:4.8,d:.5,rotation:0}];
+route=findWalkway(room,barrier);assert.equal(route.ok,false,'wall-to-wall screen blocks the route');
+const shifting=[{type:'sofa',x:0,z:0,w:1.5,d:1,rotation:0}];
+route=findWalkway(room,shifting);assert(route.ok,'path should go around furniture');
+const clear=calculateClearanceRatio(room,[]),crowded=calculateClearanceRatio(room,shifting);
+assert(clear>crowded);assert(clear<=100&&crowded>=0);
+const rotated=[{type:'screen',x:0,z:0,w:2.6,d:.2,rotation:90}];
+assert(pointBlocked(0,1,rotated));assert(!pointBlocked(1,0,rotated));
+assert.equal(findWalkway({width:0,depth:4},[]).ok,false);
+console.log('PASS — walkability, rotations, furniture clearance, accessible percentage and blocked route');
