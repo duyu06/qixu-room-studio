@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createAtmosphere } from './atmosphere-v7.js';
 /* V6: turn raster floor plans into schematic, editable 3D walls.
    All recognition is local. The result is not a measured BIM model. */
 export function attachBlueprint({scene,camera,orbit,renderer,state}) {
@@ -24,6 +25,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   pane.className='floorplan-tools';
   pane.innerHTML='<b>户型图 → 立体空间</b><p id="plan-status">上传平面图后，会在同一个 3D 场景重建估算墙线。</p><div class="plan-actions"><button id="plan-edit" type="button">补画墙体</button><button id="plan-undo" type="button">删除上一段墙</button><button id="plan-overlay" type="button">切换底图</button></div><p>补画模式：俯视图依次点击起点和终点。扫描存在误检，真实尺寸与门窗须人工确认。</p>';
   $('dropzone').after(pane);
+  const atmosphere=createAtmosphere({scene,renderer,state,host:pane,onWallModeChange:()=>renderPlan(false)});
   const planStatus=pane.querySelector('#plan-status');
   const sampleBox={left:46,top:44,right:421,bottom:482};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -38,16 +40,24 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     const tex=new THREE.CanvasTexture(bitmap);tex.colorSpace=THREE.SRGBColorSpace;
     const crop=plan.crop;tex.repeat.set((crop.right-crop.left)/bitmap.width,(crop.bottom-crop.top)/bitmap.height);
     tex.offset.set(crop.left/bitmap.width,1-crop.bottom/bitmap.height);
-    const slab=new THREE.Mesh(new THREE.PlaneGeometry(plan.w,plan.d),new THREE.MeshStandardMaterial({map:tex,roughness:.95,side:THREE.DoubleSide}));
-    slab.rotation.x=-Math.PI/2;slab.position.y=.025;slab.receiveShadow=true;overlay.add(slab);
-    const mat=new THREE.MeshStandardMaterial({color:'#e3ded2',roughness:.94,transparent:true,opacity:.90});
+    const slab=new THREE.Mesh(new THREE.PlaneGeometry(plan.w,plan.d),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,toneMapped:false}));
+    slab.rotation.x=-Math.PI/2;slab.position.y=.025;slab.receiveShadow=false;overlay.add(slab);
+    const wallMode=atmosphere.wallMode;
+    const height=wallMode==='cutaway'?1.22:2.52;
+    const mat=new THREE.MeshStandardMaterial({color:'#fffaee',roughness:.83,transparent:wallMode==='ghost',opacity:wallMode==='ghost'?.34:1,depthWrite:wallMode!=='ghost',side:THREE.DoubleSide});
+    const capMat=new THREE.MeshStandardMaterial({color:'#d9b993',roughness:.85});
     for(const [x1,y1,x2,y2] of plan.walls){
       const a=pxWorld(x1,y1),b=pxWorld(x2,y2),len=Math.hypot(b.x-a.x,b.z-a.z);
       if(len<.10)continue;
-      const wall=new THREE.Mesh(new THREE.BoxGeometry(len,2.52,.10),mat);
-      wall.position.set((a.x+b.x)/2,1.28,(a.z+b.z)/2);
+      const wall=new THREE.Mesh(new THREE.BoxGeometry(len,height,.105),mat);
+      wall.position.set((a.x+b.x)/2,height/2+.026,(a.z+b.z)/2);
       wall.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
-      wall.castShadow=true;wall.receiveShadow=true;overlay.add(wall);
+      wall.castShadow=wallMode!=='ghost';wall.receiveShadow=true;overlay.add(wall);
+      if(wallMode!=='ghost'){
+        const cap=new THREE.Mesh(new THREE.BoxGeometry(len,.027,.133),capMat);
+        cap.rotation.y=wall.rotation.y;cap.position.set(wall.position.x,height+.037,wall.position.z);
+        cap.castShadow=false;overlay.add(cap);
+      }
     }
 
     for(const [idx,item] of (plan.furniture||[]).entries()){
@@ -63,6 +73,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     if(recenter){camera.position.set(plan.w*.75,Math.max(11,plan.d*1.25),plan.d*1.05);
     orbit.target.set(0,0,0);orbit.update();}
     planStatus.textContent=plan.note+' · '+plan.walls.length+' 段墙体。宽高均为示意比例，非真实测量。';
+    atmosphere.onPlan(plan,overlay);
   }
   function genericWalls(ctx,w,h){
     const pixels=ctx.getImageData(0,0,w,h).data;
