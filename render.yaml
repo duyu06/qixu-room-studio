@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: qixu-room-studio
+    runtime: static
+    plan: free
+    buildCommand: 'echo "Static site: no build required"'
+    staticPublishPath: ./site
