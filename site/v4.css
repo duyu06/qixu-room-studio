@@ -1,0 +1,9 @@
+/* Version 4 — quick-edit controls and route feedback */
+.header-actions{gap:8px}.save-indicator{max-width:220px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.workspace-top .top-buttons{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+.walkway-result{border:1px solid #cbdcd5;background:#eaf5f0;color:#356b59;font-size:12px;line-height:1.6;padding:11px 12px;border-radius:10px;margin-top:10px}
+.walkway-result.warning{border-color:#ead3b9;background:#fbf2e5;color:#956744}
+.walkway-switch{display:flex;align-items:center;gap:9px;padding:10px 12px;background:#eaf4f1;color:#356a61;border-radius:10px;font-size:12px;cursor:pointer;font-weight:600}
+.walkway-switch input{accent-color:#31998f;width:16px;height:16px;flex-shrink:0}
+@media (max-width:760px){.workspace-top .top-buttons .btn{font-size:11px;padding:8px 9px}.header-actions{gap:3px}.save-indicator{display:none}.walkway-result{font-size:11px}}
