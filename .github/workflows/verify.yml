@@ -1,0 +1,21 @@
+name: Verify Qixu V4
+on:
+  push:
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for f in site/src/*.js; do node --check "$f"; done
+      - name: Run logic tests
+        run: |
+          node tests/logic.test.cjs
+          node tests/feng-model.test.mjs
+          node tests/space-model.test.mjs
+          node tests/history-model.test.mjs
