@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { BAGUA, FIVE_ELEMENTS, SHENG, KE, roomTips, fieldVector, directionRecord } from './feng-model.js';
 import { findWalkway, calculateClearanceRatio } from './space-model.js';
 import { HistoryJournal } from './history-model.js';
+import { connectedLayout, partitionSections, clampToArea, inferArea } from './connected-layout.js';
 
 // 栖序 Space Atelier — all geometry is procedural; no remote furniture assets or AI key required.
 // One photograph is NOT enough for a metrically accurate room scan. Upload builds an editable
@@ -43,7 +44,7 @@ let wallParts = [], floorMaterial, wallMaterial, foregroundFloor, windowBounds =
 let nextId = 1, down = null, toastTimer, cameraTween;
 let flowGroup=null, flowParticles=null, flowLines=null, flowHeatPlane=null, flowSeeds=[], flowPositions=null, flowColors=null, flowLinePositions=null;
 let frameLast=0, knowledgeCache='';
-const STORAGE_KEY='qixu-space-studio-v4.autosave';
+const STORAGE_KEY='qixu-space-studio-v4.autosave'; // Preserve local projects across the connected-room upgrade
 const journal=new HistoryJournal(40);
 let saveDelay=null, restoring=false, walkLine=null;
 const raycaster = new THREE.Raycaster();
@@ -148,7 +149,7 @@ function makeObject(type){
   return g;
 }
 
-function texturedFloor(kind){
+function texturedFloor(kind, totalWidth=state.width){
   const cn=document.createElement('canvas');cn.width=768;cn.height=768;
   const c=cn.getContext('2d');
   if(kind==='wood'){
@@ -173,7 +174,7 @@ function texturedFloor(kind){
     c.fillStyle='#D2D0C6';c.fillRect(0,0,768,768);
     for(let i=0;i<1800;i++){let x=(i*397)%768,y=(i*223)%768;c.fillStyle=i%3===0?'#c6c3b9':'#dad7cf';c.globalAlpha=.25;c.fillRect(x,y,2,2)}c.globalAlpha=1;
   }
-  const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;tex.repeat.set(state.width/3.4,state.depth/3.4);
+  const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;tex.repeat.set(totalWidth/3.4,state.depth/3.4);
   return tex;
 }
 function clearGroup(group){while(group.children.length){const child=group.children[0];group.remove(child);child.traverse?.(o=>{if(o.geometry)o.geometry.dispose(); if(o.material&&o.material!==wallMaterial&&o.material!==floorMaterial){const arr=Array.isArray(o.material)?o.material:[o.material];arr.forEach(m=>m.dispose?.())}})}}
@@ -182,12 +183,12 @@ function buildRoom(){
   if(wallMaterial)wallMaterial.dispose();
   if(floorMaterial){floorMaterial.map?.dispose();floorMaterial.dispose()}
   roomGroup=new THREE.Group();roomGroup.name='editable-room';scene.add(roomGroup);
-  const W=state.width,D=state.depth,H=state.height;
-  floorMaterial=new THREE.MeshStandardMaterial({map:texturedFloor(state.floor),roughness:.93});
+  const W=state.width,D=state.depth,H=state.height,plan=connectedLayout(W,D);
+  floorMaterial=new THREE.MeshStandardMaterial({map:texturedFloor(state.floor,plan.totalWidth),roughness:.93});
   wallMaterial=material(state.wall,.98);
-  floorMesh=niceBox(roomGroup,W,.14,D,floorMaterial,0,-.085,0,.022,{shadow:false});
+  floorMesh=niceBox(roomGroup,plan.totalWidth,.14,D,floorMaterial,plan.centerX,-.085,0,.012,{shadow:false});
   floorMesh.name='room-floor';
-  // The wall pivots allow true unfolding into a flattened 3D architectural model.
+  // One continuous slab; common partitions have door openings, never exploded/rotated.
   wallParts=[];
   const createWall=(name,x,z,w,h,d,foldAxis,foldTarget,seeThrough=false)=>{
     const hinge=new THREE.Group();hinge.name=name;hinge.position.set(x,0,z);
@@ -208,15 +209,39 @@ function buildRoom(){
   panel(winW,sill,winX,sill/2);
   panel(winW,H-sill-winH,winX,(H+sill+winH)/2);
   windowBounds={x:winX,left:l,right:r,bottom:sill,top:sill+winH,width:winW,height:winH};
-  const left=createWall('left-wall',-W/2,0, .10,H,D,'z',Math.PI/2);
-  createWall('right-ghost-wall',W/2,0,.10,H,D,'z',-Math.PI/2,true);
+  // Rear exterior wall continues seamlessly into both side rooms.
+  niceBox(roomGroup,plan.areas.study.width,H,.10,wallMaterial,plan.areas.study.centerX,H/2,-D/2,.006);
+  niceBox(roomGroup,plan.areas.bedroom.width,H,.10,wallMaterial,plan.areas.bedroom.centerX,H/2,-D/2,.006);
+  const left=createWall('outer-left',plan.minX,0,.10,H,D,'z',0);
+  createWall('outer-right-cutaway',plan.maxX,0,.10,H,D,'z',0,true);
+  // Shared interior walls actually touch their exterior corners. Lower portions are omitted
+  // at the openings, leaving usable sightlines and visible connections between rooms.
+  for(const wallX of plan.partitions){
+    for(const section of partitionSections(D,plan.doorway)){
+      const length=section.to-section.from;
+      niceBox(roomGroup,.11,H,length,wallMaterial,wallX,H/2,(section.to+section.from)/2,.006);
+    }
+    const lintelH=Math.max(.15,H-plan.doorway.height);
+    niceBox(roomGroup,.11,lintelH,plan.doorway.width,wallMaterial,wallX,H-lintelH/2,plan.doorway.centerZ,.006);
+    for(const side of [-1,1]){
+      const frameZ=plan.doorway.centerZ+side*plan.doorway.width/2;
+      niceBox(roomGroup,.13,Math.min(H,plan.doorway.height),.05,'#D8C9B5',wallX,plan.doorway.height/2,frameZ,.009,{shadow:false});
+    }
+    niceBox(roomGroup,.16,.06,plan.doorway.width,'#BDA78F',wallX,.015,plan.doorway.centerZ,.008,{shadow:false});
+  }
+  // Floor labels distinguish uses without splitting the continuous floor.
+  for(const area of Object.values(plan.areas)){
+    const label=makeFlatLabel(area.name);
+    label.position.set(area.centerX,.022,D/2-.34);
+    roomGroup.add(label);
+  }
   // Render cutaway: front wall and ceiling are optically invisible, yet block direct sun
   // in the shadow map. This keeps the visual sunlight consistent with the window model.
   const hiddenShell=new THREE.MeshBasicMaterial({color:0xffffff,colorWrite:false,depthWrite:false,side:THREE.DoubleSide});
-  const invisibleFront=new THREE.Mesh(new THREE.PlaneGeometry(W,H),hiddenShell);
-  invisibleFront.position.set(0,H/2,D/2);invisibleFront.castShadow=true;roomGroup.add(invisibleFront);
-  const invisibleCeiling=new THREE.Mesh(new THREE.PlaneGeometry(W,D),hiddenShell.clone());
-  invisibleCeiling.rotation.x=-Math.PI/2;invisibleCeiling.position.set(0,H,.0);
+  const invisibleFront=new THREE.Mesh(new THREE.PlaneGeometry(plan.totalWidth,H),hiddenShell);
+  invisibleFront.position.set(plan.centerX,H/2,D/2);invisibleFront.castShadow=true;roomGroup.add(invisibleFront);
+  const invisibleCeiling=new THREE.Mesh(new THREE.PlaneGeometry(plan.totalWidth,D),hiddenShell.clone());
+  invisibleCeiling.rotation.x=-Math.PI/2;invisibleCeiling.position.set(plan.centerX,H,.0);
   invisibleCeiling.castShadow=true;roomGroup.add(invisibleCeiling);
   niceBox(back,W,.105,.125,'#DCD3C5',0,.055,.018,.018,{shadow:false});
   niceBox(left,.125,.105,D,'#DCD3C5',.025,.055,0,.018,{shadow:false});
@@ -287,17 +312,14 @@ function buildOverlays(){
   gridMesh=new THREE.GridHelper(Math.max(state.width,state.depth)*1.15,Math.ceil(Math.max(state.width,state.depth)*2.4),'#A5A79B','#C3C4BB');
   gridMesh.position.y=.018;gridMesh.material.transparent=true;gridMesh.material.opacity=.25;gridMesh.visible=state.grid;scene.add(gridMesh);
 }
-function updateWallFolds(immediate=false){
-  for(const wall of wallParts){
-    const target=state.unfolded?wall.foldTarget:0;
-    if(immediate){wall.hinge.rotation[wall.foldAxis]=target}else wall.goal=target;
-  }
-  $('scene-message').textContent=state.unfolded?'墙体展开模式':'自由编辑模式';
+function updateWallFolds(){
+  state.unfolded=false;
+  $('scene-message').textContent='整屋联通 · 客厅 / 卧室 / 书房';
 }
 function updateRoomMaterials(){buildRoom()}
-function addFurniture(type,x,z,{quiet=false,rotation=0,scale=1}={}){
+function addFurniture(type,x,z,{quiet=false,rotation=0,scale=1,roomId=state.room}={}){
   const cat=shapeCatalog[type];if(!cat)return null;
-  const item={id:nextId++,type,name:cat.name,icon:cat.icon,group:makeObject(type),w:cat.w,d:cat.d,rotation,scale,widthScale:1,depthScale:1};
+  const item={id:nextId++,type,name:cat.name,icon:cat.icon,room:roomId,group:makeObject(type),w:cat.w,d:cat.d,rotation,scale,widthScale:1,depthScale:1};
   item.group.position.set(x,0,z);item.group.rotation.y=rad(rotation);applyItemScale(item);
   item.group.userData.itemId=item.id;
   item.group.traverse(child=>{child.userData.itemId=item.id});
@@ -309,25 +331,37 @@ function addFurniture(type,x,z,{quiet=false,rotation=0,scale=1}={}){
   return item;
 }
 function removeItems(){for(const item of state.items){scene.remove(item.group);clearGroup(item.group)}state.items=[];state.selected=null;updateSelection();refreshFurnitureList()}
-function resetPreset(type,quiet=false){
-  state.room=type;state.layoutIteration=0;removeItems();
-  const W=state.width,D=state.depth;
-  if(type==='living'){
-    addFurniture('rug',0,.25,{quiet:true});addFurniture('sofa',0,-D*.22,{quiet:true});addFurniture('table',0,.2,{quiet:true});
-    addFurniture('plant',W*.38,-D*.30,{quiet:true});addFurniture('lamp',W*.35,D*.25,{quiet:true});
-    addFurniture('cabinet',-W*.33,D*.28,{quiet:true,rotation:90});
-  }else if(type==='bedroom'){
-    addFurniture('rug',.15,.25,{quiet:true});addFurniture('bed',.25,-D*.10,{quiet:true});
-    addFurniture('lamp',W*.36,-D*.30,{quiet:true});addFurniture('plant',-W*.33,-D*.34,{quiet:true});
-    addFurniture('cabinet',-W*.30,D*.32,{quiet:true,rotation:90});
-  }else{
-    addFurniture('desk',0,-D*.32,{quiet:true});addFurniture('chair',0,-D*.09,{quiet:true});
-    addFurniture('rug',.10,D*.25,{quiet:true});addFurniture('plant',W*.37,-D*.31,{quiet:true});
-    addFurniture('lamp',W*.33,D*.32,{quiet:true});addFurniture('cabinet',-W*.35,D*.25,{quiet:true,rotation:90});
-  }
+function chooseRoom(type,{quiet=false}={}){
+  if(!['living','bedroom','study'].includes(type))return;
+  state.room=type;
   document.querySelectorAll('#room-presets button').forEach(b=>b.classList.toggle('active',b.dataset.room===type));
-  applyArrangement(0,true);
-  updateRoomKnowledge();updateGuidance();if(!quiet)toast(`已切换为${type==='living'?'客厅':type==='bedroom'?'卧室':'书房'}参考布局`);
+  updateRoomKnowledge();updateGuidance();
+  if(!quiet)toast(`正在编辑${connectedLayout(state.width,state.depth).areas[type].name}，其他房间保持原样`);
+}
+function resetPreset(type,quiet=false){
+  // Reset only the selected room; all three zones remain together in the same floorplan.
+  const keep=state.items.filter(i=>i.room!==type);
+  for(const item of state.items.filter(i=>i.room===type)){scene.remove(item.group);clearGroup(item.group)}
+  state.items=keep;state.selected=null;
+  chooseRoom(type,{quiet:true});state.layoutIteration=0;
+  const area=connectedLayout(state.width,state.depth).areas[type];
+  const W=area.width,D=area.depth,C=area.centerX;
+  const add=(kind,dx,dz,opt={})=>addFurniture(kind,C+dx,dz,{...opt,quiet:true,roomId:type});
+  if(type==='living'){
+    add('rug',0,.25);add('sofa',0,-D*.22);add('table',0,.2);
+    add('plant',W*.38,-D*.30);add('lamp',W*.35,D*.25);
+    add('cabinet',-W*.33,D*.28,{rotation:90});
+  }else if(type==='bedroom'){
+    add('rug',.15,.25);add('bed',.25,-D*.10);
+    add('lamp',W*.36,-D*.30);add('plant',-W*.33,-D*.34);
+    add('cabinet',-W*.30,D*.32,{rotation:90});
+  }else{
+    add('desk',0,-D*.32);add('chair',0,-D*.09);
+    add('rug',.10,D*.25);add('plant',W*.37,-D*.31);
+    add('lamp',W*.33,D*.32);add('cabinet',-W*.35,D*.25,{rotation:90});
+  }
+  applyArrangement(0,true);updateSelection();updateGuidance();
+  if(!quiet)toast(`已重置${area.name}布局，其他房间未改变`);
 }
 function applyItemScale(item){item.group.scale.set(item.scale*item.widthScale,item.scale,item.scale*item.depthScale)}
 function footprint(item){
@@ -337,9 +371,9 @@ function footprint(item){
 }
 function clampItem(item){
   const {ex,ez}=footprint(item);
-  const boundX=Math.max(0,state.width/2-ex-.06),boundZ=Math.max(0,state.depth/2-ez-.06);
-  item.group.position.x=clamp(item.group.position.x,-boundX,boundX);
-  item.group.position.z=clamp(item.group.position.z,-boundZ,boundZ);
+  const area=connectedLayout(state.width,state.depth).areas[item.room]||connectedLayout(state.width,state.depth).areas.living;
+  const point=clampToArea(area,item.group.position.x,item.group.position.z,ex,ez);
+  item.group.position.set(point.x,0,point.z);
 }
 function furnitureCorners(item){
   const {w,d}=footprint(item),a=rad(item.rotation),c=Math.cos(a),s=Math.sin(a);
@@ -360,7 +394,7 @@ function furnitureCollision(a,b){
 function layoutIssues(){
   const collisions=[];
   for(let i=0;i<state.items.length;i++)for(let j=i+1;j<state.items.length;j++){
-    if(furnitureCollision(state.items[i],state.items[j]))collisions.push([state.items[i],state.items[j]]);
+    if(state.items[i].room===state.items[j].room&&furnitureCollision(state.items[i],state.items[j]))collisions.push([state.items[i],state.items[j]]);
   }
   const doorX=-state.width/2+Math.min(1,state.width*.22),doorZ=state.depth/2-.08;
   const nearDoor=state.items.filter(i=>i.type!=='rug'&&Math.hypot(i.group.position.x-doorX,i.group.position.z-doorZ)<Math.max(.78,footprint(i).d/2+.55));
@@ -369,13 +403,13 @@ function layoutIssues(){
 function refreshFurnitureList(){
   const target=$('furniture-list');if(!target)return;target.replaceChildren();
   for(const item of state.items){const b=el('button',item===state.selected?'furniture-row active':'furniture-row');
-    b.type='button';b.append(el('span','',item.icon),el('span','',item.name),el('small','',`${directionOf(item.group.position.x,item.group.position.z)} · ${item.group.position.x.toFixed(1)}, ${item.group.position.z.toFixed(1)}`));
+    b.type='button';b.append(el('span','',item.icon),el('span','',item.name),el('small','',`${connectedLayout(state.width,state.depth).areas[item.room]?.name||'客厅'} · ${directionOf(item.group.position.x,item.group.position.z)}`));
     b.addEventListener('click',()=>selectItem(item));target.append(b);
   }
   const issues=layoutIssues();const health=$('layout-health');
   if(health){health.textContent=issues.collisions.length?`注意：发现 ${issues.collisions.length} 组家具占地重叠，建议移动或调小尺寸。`:'当前未发现家具占地重叠（示意检测）';health.classList.toggle('warning',issues.collisions.length>0)}
 }
-function selectItem(item){state.selected=item;updateSelection()}
+function selectItem(item){state.selected=item;if(item?.room)chooseRoom(item.room,{quiet:true});updateSelection()}
 function setSelectionFromId(id){selectItem(state.items.find(i=>i.id===id)||null)}
 function updateSelection(){
   const item=state.selected;
@@ -386,7 +420,8 @@ function updateSelection(){
     $('selected-name').textContent=item.name;$('selected-icon').textContent=item.icon;
     const xrange=$('object-x'),zrange=$('object-z');
     const {ex,ez,w,d}=footprint(item);
-    xrange.min=(-Math.max(0,state.width/2-ex-.06)).toFixed(2);xrange.max=(Math.max(0,state.width/2-ex-.06)).toFixed(2);
+    const area=connectedLayout(state.width,state.depth).areas[item.room]||connectedLayout(state.width,state.depth).areas.living;
+    xrange.min=(area.minX+ex+.06).toFixed(2);xrange.max=(area.maxX-ex-.06).toFixed(2);
     zrange.min=(-Math.max(0,state.depth/2-ez-.06)).toFixed(2);zrange.max=(Math.max(0,state.depth/2-ez-.06)).toFixed(2);
     xrange.value=item.group.position.x;zrange.value=item.group.position.z;
     $('object-x-value').textContent=`${item.group.position.x.toFixed(2)} m`;
@@ -397,7 +432,7 @@ function updateSelection(){
     $('object-depth').value=Math.round(item.depthScale*100);$('object-depth-value').textContent=`${Math.round(item.depthScale*100)}%`;
     $('object-footprint').textContent=`实际占地：${w.toFixed(2)} × ${d.toFixed(2)} 米`;
     const dir=directionOf(item.group.position.x,item.group.position.z);
-    $('selected-direction').textContent=dir==='中'?'位于房间中心':`传统方位：${dir}`;
+    $('selected-direction').textContent=`${connectedLayout(state.width,state.depth).areas[item.room]?.name||'客厅'} · 传统方位：${dir}`;
     selectionHelper=new THREE.BoxHelper(item.group,0xAC8E62);selectionHelper.material.transparent=true;selectionHelper.material.opacity=.72;scene.add(selectionHelper);
   }
   refreshFurnitureList();updateGuidance();refreshFlowHeat();
@@ -418,7 +453,7 @@ function setItemTransform(){const item=state.selected;if(!item)return;
   selectionHelper?.update();updateSelection();
 }
 function duplicateSelected(){if(!state.selected)return;const src=state.selected;
-  const clone=addFurniture(src.type,src.group.position.x+.35,src.group.position.z+.35,{rotation:src.rotation,scale:src.scale});
+  const clone=addFurniture(src.type,src.group.position.x+.35,src.group.position.z+.35,{roomId:src.room,rotation:src.rotation,scale:src.scale});
   clone.widthScale=src.widthScale;clone.depthScale=src.depthScale;applyItemScale(clone);clampItem(clone);updateSelection();toast('已复制家具，可以继续移动');
 }
 function deleteSelected(){if(!state.selected)return;const item=state.selected;state.selected=null;scene.remove(item.group);clearGroup(item.group);state.items=state.items.filter(i=>i!==item);updateSelection();toast(`已移除：${item.name}`)}
@@ -547,21 +582,22 @@ function syncDimensions(){
   $('width-output').textContent=`${state.width.toFixed(1)} m`;
   $('depth-output').textContent=`${state.depth.toFixed(1)} m`;
   $('height-output').textContent=`${state.height.toFixed(1)} m`;
-  $('viewport-dimensions').textContent=`${state.width.toFixed(1)} × ${state.depth.toFixed(1)} × ${state.height.toFixed(1)} m`;
+  $('viewport-dimensions').textContent=`整屋 ${connectedLayout(state.width,state.depth).totalWidth.toFixed(1)} × ${state.depth.toFixed(1)} × ${state.height.toFixed(1)} m`;
 }
 function updateRangeFill(input){
   const mn=Number(input.min)||0,mx=Number(input.max)||100,pct=(Number(input.value)-mn)/(mx-mn)*100;
   input.style.background=`linear-gradient(90deg,#87947d 0%,#87947d ${pct}%,#e7e8e2 ${pct}%,#e7e8e2 100%)`;
 }
 function setCameraView(view){
-  const r=Math.max(state.width,state.depth);
+  const layout=connectedLayout(state.width,state.depth);
+  const r=Math.max(layout.totalWidth,state.depth);
   let pos;
-  if(view==='top')pos=new THREE.Vector3(.01,r*2.0,.015);
-  else if(view==='front')pos=new THREE.Vector3(0,2.8,r*1.9);
-  else pos=new THREE.Vector3(r*1.29,r*.99,r*1.48);
-  cameraTween={start:camera.position.clone(),end:pos,t:0,startTarget:orbit.target.clone(),endTarget:new THREE.Vector3(0,.45,0)};
+  if(view==='top')pos=new THREE.Vector3(layout.centerX+.01,r*1.35,.015);
+  else if(view==='front')pos=new THREE.Vector3(layout.centerX,Math.max(4.5,r*.35),r*1.5);
+  else pos=new THREE.Vector3(layout.centerX+r*.70,r*.80,r*1.30);
+  cameraTween={start:camera.position.clone(),end:pos,t:0,startTarget:orbit.target.clone(),endTarget:new THREE.Vector3(layout.centerX,.45,0)};
   document.querySelectorAll('#view-buttons button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  // in top view the unfolded walls are most legible.
+  // A single connected floorplan remains visible in every camera view.
 }
 function updateGuidance(){
   const root=$('feng-guidance');root.replaceChildren();
@@ -620,14 +656,14 @@ function updateCompass(){
 function saveBlob(contents,name,type){const b=contents instanceof Blob?contents:new Blob([contents],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
 function projectSnapshot(){
   return {
-    schema:'qixu-room-v4',notice:'The artistic flow and daylight model are illustrative. Uploaded photos are not embedded.',
+    schema:'qixu-room-v5',notice:'The artistic flow and daylight model are illustrative. Uploaded photos are not embedded.',
     room:{width:state.width,depth:state.depth,height:state.height,wall:state.wall,floor:state.floor,roomType:state.room,light:state.light,north:state.north,sunHour:state.sunHour,daylight:state.daylight,lampPower:state.lampPower,lightKelvin:state.lightKelvin,windowWidth:state.windowWidth,windowPosition:state.windowPosition},
-    items:state.items.map(i=>({type:i.type,x:Number(i.group.position.x.toFixed(3)),z:Number(i.group.position.z.toFixed(3)),rotation:i.rotation,scale:i.scale,widthScale:i.widthScale,depthScale:i.depthScale})),
+    items:state.items.map(i=>({type:i.type,room:i.room,x:Number(i.group.position.x.toFixed(3)),z:Number(i.group.position.z.toFixed(3)),rotation:i.rotation,scale:i.scale,widthScale:i.widthScale,depthScale:i.depthScale})),
     flow:{visible:state.flowVisible,heat:state.flowHeat,speed:state.flowSpeed,density:state.flowDensity,mode:state.flowMode,bagua:state.chosenBagua,element:state.chosenElement,route:state.routeVisible}
   };
 }
 function saveProject(){
-  saveBlob(JSON.stringify(projectSnapshot(),null,2),'栖序-V4-空间方案.json','application/json');toast('方案已导出为 JSON 文件');
+  saveBlob(JSON.stringify(projectSnapshot(),null,2),'栖序-V5-整屋联通方案.json','application/json');toast('方案已导出为 JSON 文件');
 }
 function scheduleAutoSave(){
   if(restoring)return;
@@ -655,7 +691,7 @@ function navigateHistory(dir){
 function applyProjectData(data,{quiet=false}={}){
   const prior=restoring;restoring=true;
   try{
-    if(!['qixu-room-v1','qixu-room-v2','qixu-room-v3','qixu-room-v4'].includes(data?.schema)||!data.room||!Array.isArray(data.items))throw new Error('不是有效的栖序方案文件');
+    if(!['qixu-room-v1','qixu-room-v2','qixu-room-v3','qixu-room-v4','qixu-room-v5'].includes(data?.schema)||!data.room||!Array.isArray(data.items))throw new Error('不是有效的栖序方案文件');
     const room=data.room;
     const numberIn=(n,lo,hi,dflt)=>Number.isFinite(Number(n))?clamp(Number(n),lo,hi):dflt;
     state.width=numberIn(room.width,3,8,4.8);
@@ -675,8 +711,16 @@ function applyProjectData(data,{quiet=false}={}){
     removeItems();buildRoom();
     for(const obj of data.items.slice(0,100)){
       if(!shapeCatalog[obj?.type])continue;
-      const item=addFurniture(obj.type,numberIn(obj.x,-4,4,0),numberIn(obj.z,-4,4,0),{
-        quiet:true,rotation:numberIn(obj.rotation,0,359,0),scale:numberIn(obj.scale,.65,1.4,1)
+      const plan=connectedLayout(state.width,state.depth);
+      const legacy=data.schema!=='qixu-room-v5'&&!obj.room;
+      const roomId=['living','bedroom','study'].includes(obj.room)?obj.room:
+        (legacy?state.room:inferArea(plan,numberIn(obj.x,-12,12,0)));
+      // Earlier versions used a single room centered at x=0. Translate its coordinates
+      // into the equivalent zone of the new connected floorplan.
+      const sourceX=numberIn(obj.x,-12,12,0);
+      const mappedX=legacy?sourceX+plan.areas[roomId].centerX:sourceX;
+      const item=addFurniture(obj.type,mappedX,numberIn(obj.z,-4,4,0),{
+        roomId,quiet:true,rotation:numberIn(obj.rotation,0,359,0),scale:numberIn(obj.scale,.65,1.4,1)
       });
       item.widthScale=numberIn(obj.widthScale,.6,1.6,1);item.depthScale=numberIn(obj.depthScale,.6,1.6,1);
       applyItemScale(item);clampItem(item);
@@ -722,9 +766,10 @@ function selectLayoutButton(n){document.querySelectorAll('#layout-variants butto
 function applyArrangement(n,quiet=false){
   state.layoutIteration=n;const pattern=patterns[state.room][n]||patterns[state.room][0];
   const seen=new Set();
-  for(const item of state.items){if(seen.has(item.type))continue;seen.add(item.type);
+  const area=connectedLayout(state.width,state.depth).areas[state.room];
+  for(const item of state.items){if(item.room!==state.room||seen.has(item.type))continue;seen.add(item.type);
     const p=pattern[item.type];if(!p)continue;
-    item.group.position.x=p[0]*state.width;item.group.position.z=p[1]*state.depth;
+    item.group.position.x=area.centerX+p[0]*area.width;item.group.position.z=p[1]*area.depth;
     item.rotation=p[2];item.group.rotation.y=rad(item.rotation);clampItem(item);
   }
   selectLayoutButton(n);updateSelection();updateGuidance();
@@ -777,11 +822,11 @@ function readPhoto(file){
 
 function setupEvents(){
   for(const i of catalog){const button=el('button','catalog-item');button.type='button';button.innerHTML=`<span class="catalog-icon">${i.icon}</span><span>${i.name}</span>`;
-    button.title=`添加${i.name}`;button.addEventListener('click',()=>addFurniture(i.type,0,.20));$('catalog').append(button)}
+    button.title=`添加${i.name}`;button.addEventListener('click',()=>addFurniture(i.type,connectedLayout(state.width,state.depth).areas[state.room].centerX,.20));$('catalog').append(button)}
   for(const id of ['room-width','room-depth','room-height']){
     $(id).addEventListener('input',()=>{state[id.replace('room-','')]=Number($(id).value);buildRoom();updateRangeFill($(id))});
   }
-  document.querySelectorAll('#room-presets button').forEach(b=>b.addEventListener('click',()=>resetPreset(b.dataset.room)));
+  document.querySelectorAll('#room-presets button').forEach(b=>b.addEventListener('click',()=>chooseRoom(b.dataset.room)));
   document.querySelectorAll('#wall-palette .swatch').forEach(b=>b.addEventListener('click',()=>{
     state.wall=b.dataset.color;document.querySelectorAll('#wall-palette .swatch').forEach(s=>s.classList.toggle('selected',s===b));
     buildRoom();
@@ -796,7 +841,7 @@ function setupEvents(){
   for(const [id,key] of [['window-width','windowWidth'],['window-position','windowPosition']])$(id).addEventListener('input',e=>{state[key]=Number(e.target.value);buildRoom();updateRangeFill(e.target)});
   document.querySelectorAll('#layout-variants button').forEach(b=>b.addEventListener('click',()=>applyArrangement(Number(b.dataset.layout))));
   document.querySelectorAll('#view-buttons button').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
-  $('unfold-walls').addEventListener('change',e=>{state.unfolded=e.target.checked;updateWallFolds()});
+  // Walls are fixed in place: room partitions remain physically connected at all times.
   $('feng-overlay').addEventListener('change',e=>{state.overlays=e.target.checked;fengGroup.visible=state.overlays});
   $('flow-overlay').addEventListener('change',e=>{state.flowVisible=e.target.checked;syncFlowUI()});
   $('flow-heat').addEventListener('change',e=>{state.flowHeat=e.target.checked;syncFlowUI();refreshFlowHeat()});
@@ -931,7 +976,7 @@ function refreshWalkway(){
   const node=$('walkway-result');
   if(node){
     node.classList.toggle('warning',!route.ok);
-    node.textContent=route.ok?`示意动线畅通 · 约 ${route.length.toFixed(1)} m · 可用地面 ${free}%`:`入口到窗侧通行受阻 · 可用地面 ${free}% · 试着移动家具`;
+    node.textContent=route.ok?`客厅通行示意畅通 · 约 ${route.length.toFixed(1)} m · 可用地面 ${free}%`:`客厅入口到窗侧通行受阻 · 可用地面 ${free}% · 试着移动家具`;
   }
   if(!route.ok||!route.points.length)return;
   const pts=route.points.map(p=>new THREE.Vector3(p.x,.083,p.z));
@@ -1034,10 +1079,6 @@ function animate(now=0){
     orbit.target.lerpVectors(cameraTween.startTarget,cameraTween.endTarget,a);
     if(cameraTween.t>=1)cameraTween=null;
   }
-  for(const w of wallParts){if(w.goal===undefined)continue;
-    w.hinge.rotation[w.foldAxis]+=(w.goal-w.hinge.rotation[w.foldAxis])*.16;
-    if(Math.abs(w.goal-w.hinge.rotation[w.foldAxis])<.001){w.hinge.rotation[w.foldAxis]=w.goal;delete w.goal}
-  }
   orbit.update();renderer.render(scene,camera);
 }
 function boot(){
@@ -1057,7 +1098,8 @@ function boot(){
   orbit.screenSpacePanning=false;orbit.enablePan=true;
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),material('#E8EAE4',.96));
   floor.rotation.x=-Math.PI/2;floor.position.y=-.16;floor.receiveShadow=true;scene.add(floor);foregroundFloor=floor;
-  makeLights();buildRoom();resetPreset('living',true);setupEvents();updateCompass();setLight('day');
+  makeLights();buildRoom();resetPreset('living',true);resetPreset('bedroom',true);resetPreset('study',true);setupEvents();chooseRoom('living',{quiet:true});updateCompass();setLight('day');
+  orbit.maxDistance=30;setCameraView('perspective');
   try{
     const saved=localStorage.getItem(STORAGE_KEY);
     if(saved){applyProjectData(JSON.parse(saved),{quiet:true});$('save-notice').textContent='已恢复上次本地方案';}

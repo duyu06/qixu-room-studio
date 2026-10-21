@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f7f6f2" />
-  <title>栖序 V4 · 光线与空间流动实验室</title>
+  <title>栖序 V5 · 整屋联通设计实验室</title>
   <meta name="description" content="上传一张房间照片，建立可编辑的 3D 装修空间，布置家具，探索传统风水八方方位。" />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./feng-v3.css" />
@@ -23,7 +23,7 @@
   <div class="app-shell">
     <header class="site-header">
       <div class="brand"><span class="brand-logo"><span></span><span></span><span></span></span><div><b>栖序</b><small>SPACE ATELIER</small></div></div>
-      <div class="header-center"><span class="live-dot"></span> 交互式空间设计实验室 <span class="sep"></span> VERSION / 004</div>
+      <div class="header-center"><span class="live-dot"></span> 交互式空间设计实验室 <span class="sep"></span> VERSION / 005</div>
       <div class="header-actions"><span class="save-indicator" id="save-notice" role="status">本地自动保存已准备</span><button class="btn subtle small" id="import-project">↑ 导入方案</button><input type="file" id="project-file" accept="application/json,.json" hidden /><button class="btn subtle small" id="export-project">↓ 导出方案</button></div>
     </header>
     <div class="content-grid">
@@ -42,10 +42,11 @@
           <p class="quiet-note" id="upload-note">无需上传即可体验预设房间。照片只在本地浏览器中处理。</p>
         </section>
         <section class="editor-section">
-          <div class="section-heading"><div><span class="section-index">02</span><strong>空间类型</strong></div><span class="secondary-cap">LAYOUT</span></div>
+          <div class="section-heading"><div><span class="section-index">02</span><strong>选择编辑房间</strong></div><span class="secondary-cap">LAYOUT</span></div>
+          <p class="quiet-note">三间房共用连续地板，通过真实门洞连接。切换房间不会清空其他家具。</p>
           <div class="preset-switch" id="room-presets"><button class="active" data-room="living">客厅</button><button data-room="bedroom">卧室</button><button data-room="study">书房</button></div>
-          <div class="range-field"><div><label for="room-width">房间宽度</label><output id="width-output">4.8 m</output></div><input id="room-width" type="range" min="3" max="8" step="0.1" value="4.8"/></div>
-          <div class="range-field"><div><label for="room-depth">房间进深</label><output id="depth-output">4.2 m</output></div><input id="room-depth" type="range" min="2.5" max="7" step="0.1" value="4.2"/></div>
+          <div class="range-field"><div><label for="room-width">客厅宽度（两侧房间按比例联动）</label><output id="width-output">4.8 m</output></div><input id="room-width" type="range" min="3" max="8" step="0.1" value="4.8"/></div>
+          <div class="range-field"><div><label for="room-depth">整屋进深</label><output id="depth-output">4.2 m</output></div><input id="room-depth" type="range" min="2.5" max="7" step="0.1" value="4.2"/></div>
           <div class="range-field"><div><label for="room-height">层高</label><output id="height-output">2.8 m</output></div><input id="room-height" type="range" min="2.3" max="4" step="0.1" value="2.8"/></div>
         </section>
         <section class="editor-section">
@@ -71,29 +72,29 @@
         </section>
         <section class="editor-section catalog-section">
           <div class="section-heading"><div><span class="section-index">04</span><strong>添加设计元素</strong></div><span class="secondary-cap">OBJECT LIBRARY</span></div>
-          <p class="quiet-note" style="margin-top:0">点击添加到场景；移动、旋转和独立调整家具长宽。</p>
+          <p class="quiet-note" style="margin-top:0">在当前选中的房间添加家具；三个房间始终连在一起。</p>
           <div class="catalog-grid" id="catalog"></div>
           <div class="section-subheading">快速布局方案</div>
           <div class="layout-variants" id="layout-variants"><button class="active" data-layout="0">通透动线</button><button data-layout="1">靠墙布局</button><button data-layout="2">交流围合</button></div>
-          <p class="quiet-note">切换方案会重新摆放基础家具；你额外添加的家具不会被删除。</p>
+          <p class="quiet-note">仅重新摆放当前房间的基础家具，其他房间保持不变。</p>
         </section>
         <div class="left-footnote">栖序 · 将设计还给生活 <span>EST. 2026</span></div>
       </aside>
       <main class="workspace">
-        <div class="workspace-top"><div><span class="breadcrumbs">设计工作台 <span>/</span> 场景预览</span><h2>我的理想空间 <span class="tag">LIVE 3D / V4</span></h2></div><div class="top-buttons"><button class="btn subtle" id="undo-edit" disabled title="撤销 Ctrl+Z">↶ 撤销</button><button class="btn subtle" id="redo-edit" disabled title="重做 Ctrl+Y">↷ 重做</button><button class="btn subtle" id="reset-scene">↺ 重置</button><button class="btn dark" id="save-image">▧ 保存效果图</button></div></div>
+        <div class="workspace-top"><div><span class="breadcrumbs">设计工作台 <span>/</span> 场景预览</span><h2>我的理想空间 <span class="tag">LIVE 3D / V5</span></h2></div><div class="top-buttons"><button class="btn subtle" id="undo-edit" disabled title="撤销 Ctrl+Z">↶ 撤销</button><button class="btn subtle" id="redo-edit" disabled title="重做 Ctrl+Y">↷ 重做</button><button class="btn subtle" id="reset-scene">↺ 重置当前房间</button><button class="btn dark" id="save-image">▧ 保存效果图</button></div></div>
         <div class="canvas-card">
           <div class="canvas-topbar"><div class="view-buttons" id="view-buttons"><button class="active" data-view="perspective">透视视角</button><button data-view="top">平面俯视</button><button data-view="front">正面视角</button></div><div class="canvas-flag"><span class="live-dot"></span> 实时渲染</div></div>
           <div class="viewport" id="viewport">
-            <div class="viewport-gradient"></div><div class="viewport-label"><span class="label-dot"></span> SPACE / 01 <span class="divider-bar">|</span> <span id="viewport-dimensions">4.8 × 4.2 × 2.8 m</span></div>
+            <div class="viewport-gradient"></div><div class="viewport-label"><span class="label-dot"></span> SPACE / CONNECTED <span class="divider-bar">|</span> <span id="viewport-dimensions">4.8 × 4.2 × 2.8 m</span></div>
             <div class="camera-compass" aria-hidden="true"><span>N</span><span class="compass-line" id="compass-line"></span><small>方位示意</small></div>
             <div class="field-visual-indicator" id="field-visual-indicator"><span class="field-signal"></span> 八卦气韵 · 文化意象动画</div>
             <div class="scene-loading" id="scene-loading"><div class="loader-spinner"></div><b>正在构建三维空间</b><small>首次加载需要联网获取 Three.js</small></div>
             <div class="interaction-tip">拖动家具移动 <span>·</span> 旋转视角 <span>·</span> 方向键微调位置</div>
             <div class="inset-legend"><span class="legend-line"></span> <span id="scene-message">自由编辑模式</span></div>
           </div>
-          <div class="canvas-toolbar"><div class="toggle-pair"><label class="mini-toggle"><input type="checkbox" id="unfold-walls"/><span class="toggle-track"></span><span>展开墙面</span></label><label class="mini-toggle"><input type="checkbox" id="feng-overlay"/><span class="toggle-track"></span><span>八方罗盘</span></label><label class="mini-toggle"><input type="checkbox" id="flow-overlay" checked/><span class="toggle-track"></span><span>气韵流线</span></label><label class="mini-toggle"><input type="checkbox" id="sun-overlay" checked/><span class="toggle-track"></span><span>阳光落点</span></label><label class="mini-toggle"><input type="checkbox" id="flow-heat"/><span class="toggle-track"></span><span>方位热区</span></label><label class="mini-toggle"><input type="checkbox" id="snap-grid" checked/><span class="toggle-track"></span><span>10cm 吸附</span></label><label class="mini-toggle"><input type="checkbox" id="show-grid"/><span class="toggle-track"></span><span>地面网格</span></label><label class="mini-toggle"><input type="checkbox" id="photo-map" disabled/><span class="toggle-track"></span><span>照片映射</span></label></div><span class="toolbar-note">WEBGL · THREE.JS</span></div>
+          <div class="canvas-toolbar"><div class="toggle-pair"><label class="mini-toggle"><input type="checkbox" id="feng-overlay"/><span class="toggle-track"></span><span>八方罗盘</span></label><label class="mini-toggle"><input type="checkbox" id="flow-overlay" checked/><span class="toggle-track"></span><span>气韵流线</span></label><label class="mini-toggle"><input type="checkbox" id="sun-overlay" checked/><span class="toggle-track"></span><span>阳光落点</span></label><label class="mini-toggle"><input type="checkbox" id="flow-heat"/><span class="toggle-track"></span><span>方位热区</span></label><label class="mini-toggle"><input type="checkbox" id="snap-grid" checked/><span class="toggle-track"></span><span>10cm 吸附</span></label><label class="mini-toggle"><input type="checkbox" id="show-grid"/><span class="toggle-track"></span><span>地面网格</span></label><label class="mini-toggle"><input type="checkbox" id="photo-map" disabled/><span class="toggle-track"></span><span>照片映射</span></label></div><span class="toolbar-note">WEBGL · THREE.JS</span></div>
         </div>
-        <div class="under-canvas"><div class="highlight-tip"><span class="tip-symbol">✧</span><div><b>空间设计小贴士</b><p>首先确认房间的长宽和朝向，再添置家具。保持门前通道通畅，通常比堆满装饰更舒适。</p></div></div><button class="refresh-arrangement" id="shuffle-layout">✦ 试试另一种布局</button></div>
+        <div class="under-canvas"><div class="highlight-tip"><span class="tip-symbol">✧</span><div><b>空间设计小贴士</b><p>三个房间共享完整地面和带门洞的隔墙。先确认整屋朝向，再添置家具。保持门前通道通畅，通常比堆满装饰更舒适。</p></div></div><button class="refresh-arrangement" id="shuffle-layout">✦ 试试另一种布局</button></div>
       </main>
       <aside class="right-panel panel-scroll">
         <div class="inspector-heading"><div class="micro-label"><span class="accent-line"></span> DESIGN INSPECTOR</div><h3>设计控制台</h3><p>在这里精细调整空间细节。</p></div>
@@ -116,12 +117,12 @@
         <section class="right-section compass-section"><div class="right-title"><span>02 / 传统风水参考</span><span class="soft-tag gold">文化视角</span></div><div class="feng-intro">八方空间 · 传统罗盘布局</div>
           <div class="compass-row"><div class="bagua-compass"><span class="d n">北</span><span class="d ne">东北</span><span class="d e">东</span><span class="d se">东南</span><span class="d s">南</span><span class="d sw">西南</span><span class="d w">西</span><span class="d nw">西北</span><div class="compass-inner"><span id="needle" class="needle" style="transform:rotate(180deg)">↑</span><i>方位</i></div></div><div class="compass-explanation"><b id="compass-heading">北向：相对场景后方偏转 180°</b><p>请根据手机指南针或户型图校准。上传照片本身无法推断真实朝向。</p></div></div>
           <div class="range-field compact north-adjust"><div><label for="north-degrees">北向顺时针偏转</label><output id="north-value">180°</output></div><input id="north-degrees" type="range" min="0" max="345" step="15" value="180" /></div>
-          <div class="light-result" id="light-result"><b>模拟直射覆盖</b><strong id="sun-coverage">—</strong><small id="sun-description">调整时刻、窗宽和罗盘后实时更新</small></div><div class="feng-tabs" id="feng-tabs"><button class="active" data-feng="practical">动线建议</button><button data-feng="light">光线分析</button><button data-feng="culture">八卦文化</button></div><div id="feng-guidance" class="feng-guidance"></div>
+          <div class="light-result" id="light-result"><b>客厅模拟直射覆盖</b><strong id="sun-coverage">—</strong><small id="sun-description">调整时刻、窗宽和罗盘后实时更新</small></div><div class="feng-tabs" id="feng-tabs"><button class="active" data-feng="practical">动线建议</button><button data-feng="light">光线分析</button><button data-feng="culture">八卦文化</button></div><div id="feng-guidance" class="feng-guidance"></div>
           <p class="feng-disclaimer">风水仅供传统文化参考，不预测吉凶。直射比例仅根据示意窗洞和简化太阳路径计算，未考虑实际建筑物遮挡、地理位置与天气；装修请优先以真实采光、通风和安全规范为准。</p>
         </section>
         <section class="right-section cultural-flow-section" id="field-section">
           <div class="right-title"><span>03 / 八卦·气韵可视化</span><span class="soft-tag gold">艺术模拟</span></div>
-          <p class="quiet-note" style="margin-top:6px">光点会沿着示意动线流动，并绕开家具占地。它不是电磁场、地磁或真实空气流动测量。</p>
+          <p class="quiet-note" style="margin-top:6px">客厅中的艺术光点沿示意动线流动，并绕开家具占地。它不是电磁场、地磁或真实空气流动测量。</p>
           <div class="field-modes" id="flow-modes" role="group" aria-label="流动视觉模式">
             <button type="button" class="active" data-flow-mode="qi">气韵流线</button>
             <button type="button" data-flow-mode="wuxing">五行配色</button>
