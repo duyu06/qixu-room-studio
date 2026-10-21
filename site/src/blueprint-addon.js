@@ -32,7 +32,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     if(overlay){scene.remove(overlay);overlay.traverse(o=>{o.geometry?.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose())}});overlay=null;}
     objects=[];moving=null;
   }
-  function renderPlan(){
+  function renderPlan(recenter=true){
     if(!plan||!bitmap)return;
     clear();overlay=new THREE.Group();overlay.name='imported-floorplan-v6';scene.add(overlay);
     const tex=new THREE.CanvasTexture(bitmap);tex.colorSpace=THREE.SRGBColorSpace;
@@ -49,11 +49,19 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       wall.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
       wall.castShadow=true;wall.receiveShadow=true;overlay.add(wall);
     }
+
+    for(const [idx,item] of (plan.furniture||[]).entries()){
+      const dims=item.dims||[1.5,.7,.8];
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(dims[0],dims[2],dims[1]),new THREE.MeshStandardMaterial({color:item.color||'#b5a081',roughness:.85}));
+      mesh.position.set(item.x,dims[2]/2+.08,item.z);mesh.rotation.y=item.angle||0;
+      mesh.castShadow=true;mesh.userData.floorObjectIndex=idx;mesh.name='movable-'+item.label;
+      overlay.add(mesh);objects.push(mesh);
+    }
     const original=scene.getObjectByName('editable-room');if(original)original.visible=false;
     state.items.forEach(o=>o.group.visible=false);
     // Built-in demo furniture is hidden when importing a distinct plan.
-    camera.position.set(plan.w*.75,Math.max(11,plan.d*1.25),plan.d*1.05);
-    orbit.target.set(0,0,0);orbit.update();
+    if(recenter){camera.position.set(plan.w*.75,Math.max(11,plan.d*1.25),plan.d*1.05);
+    orbit.target.set(0,0,0);orbit.update();}
     planStatus.textContent=plan.note+' · '+plan.walls.length+' 段墙体。宽高均为示意比例，非真实测量。';
   }
   function genericWalls(ctx,w,h){
@@ -87,7 +95,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
         const ref=img.width===474&&img.height===514;
         const crop=ref?sampleBox:{left:Math.round(bitmap.width*.04),top:Math.round(bitmap.height*.04),right:Math.round(bitmap.width*.96),bottom:Math.round(bitmap.height*.96)};
         plan={w:ref?11.2:9.6,d:ref?13.08:9.6*bitmap.height/bitmap.width,crop,
-          walls:ref?sample.map(a=>a.slice()):genericWalls(ctx,bitmap.width,bitmap.height),
+          walls:ref?sample.map(a=>a.slice()):genericWalls(ctx,bitmap.width,bitmap.height),furniture:[],
           note:ref?'K-4 参考图：人工校对的示意墙线':'自动提线初稿：请人工核对墙体与门洞'};
         if(!plan.walls.length)plan.walls=[[crop.left,crop.top,crop.right,crop.top],[crop.right,crop.top,crop.right,crop.bottom],[crop.right,crop.bottom,crop.left,crop.bottom],[crop.left,crop.bottom,crop.left,crop.top]];
       }
@@ -98,6 +106,23 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       renderPlan();persist();
     };img.src=source;
   }
+
+  library.addEventListener('click',e=>{
+    if(!plan)return;
+    const button=e.target.closest('button');if(!button)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    const label=button.title?.replace(/^添加/,'')||button.textContent.trim();
+    const isBed=/床/.test(label),isSeat=/沙发/.test(label),isRug=/地毯/.test(label);
+    const dims=isBed?[1.8,2.1,.45]:isSeat?[1.95,.86,.72]:isRug?[2,1.5,.04]:
+      /收纳柜/.test(label)?[1.3,.48,.9]:/书桌/.test(label)?[1.4,.68,.75]:
+      /餐桌/.test(label)?[1.2,1.2,.75]:[.65,.65,.65];
+    const color=isBed?'#c5a48e':isSeat?'#aa937a':isRug?'#d5c4ac':
+      /绿植/.test(label)?'#698966':'#bda786';
+    plan.furniture=plan.furniture||[];
+    plan.furniture.push({label,dims,color,x:0,z:0,angle:0});
+    renderPlan(false);persist();
+    planStatus.textContent='已添加 '+label+'，请在 3D 场景中拖动以改变位置。';
+  },true);
   $('photo-input').addEventListener('change',e=>{
     const f=e.target.files?.[0];if(!f)return;
     e.stopImmediatePropagation();if(!/^image\/(png|jpeg|webp)$/.test(f.type))return;
@@ -121,7 +146,19 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     return ray.ray.intersectPlane(ground,hit);
   };
   renderer.domElement.addEventListener('pointerdown',e=>{
-    if(!plan||!editing||e.button!==0)return;
+    if(!plan||e.button!==0)return;
+    if(!editing){
+      const rect=renderer.domElement.getBoundingClientRect();
+      ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);
+      const selected=ray.intersectObjects(objects,false)[0];
+      if(selected){
+        e.preventDefault();e.stopImmediatePropagation();
+        moving=selected.object.userData.floorObjectIndex;plan.selectedIndex=moving;
+        orbit.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);
+        planStatus.textContent='已选中 '+plan.furniture[moving].label+'，拖动可调整位置，按 R 可旋转。';
+      }
+      return;
+    }
     e.stopImmediatePropagation();e.preventDefault();
     if(!fromPointer(e))return;
     const x=clamp((hit.x/plan.w+.5)*(plan.crop.right-plan.crop.left)+plan.crop.left,plan.crop.left,plan.crop.right);
@@ -130,6 +167,29 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       const second=[x,y];if(Math.abs(x-first[0])<Math.abs(y-first[1]))second[0]=first[0];else second[1]=first[1];
       plan.walls.push([...first,...second]);first=null;renderPlan();persist();
     }
+  },true);
+
+  renderer.domElement.addEventListener('pointermove',e=>{
+    if(moving===null||!plan)return;
+    if(!fromPointer(e))return;
+    const item=plan.furniture[moving];
+    item.x=clamp(hit.x,-plan.w/2+.2,plan.w/2-.2);
+    item.z=clamp(hit.z,-plan.d/2+.2,plan.d/2-.2);
+    const mesh=objects[moving];
+    if(mesh){mesh.position.x=item.x;mesh.position.z=item.z;}
+    e.stopImmediatePropagation();
+  },true);
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(moving===null)return;
+    moving=null;orbit.enabled=true;persist();e.stopImmediatePropagation();
+  },true);
+  window.addEventListener('keydown',e=>{
+    if(!plan||moving!==null||['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;
+    if(!Number.isInteger(plan.selectedIndex))return;
+    const idx=plan.selectedIndex,obj=plan.furniture?.[idx];
+    if(!obj)return;
+    if(e.key.toLowerCase()==='r'){obj.angle=(obj.angle||0)+Math.PI/4;e.stopImmediatePropagation();renderPlan(false);persist();}
+    if(e.key==='Delete'){plan.furniture.splice(idx,1);delete plan.selectedIndex;e.stopImmediatePropagation();renderPlan(false);persist();}
   },true);
   // Hide the old three-room template if another control rebuilt it.
   const tick=()=>{
