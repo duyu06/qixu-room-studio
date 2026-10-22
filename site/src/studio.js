@@ -371,6 +371,7 @@ function library(search=''){
 }
 $('model-search').addEventListener('input',e=>library(e.target.value.trim()));
 document.addEventListener('keydown',e=>{
+ if(touring){if(e.key==='Escape')toggleTour();return;}
  if(e.target.matches('input,textarea,select'))return;
  const cmd=e.ctrlKey||e.metaKey;
  if(cmd&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)goForward();else goBack();return;}
