@@ -10,7 +10,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
     headless: true,
-    launchOptions: { args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--disable-web-security=false'] },
+    launchOptions: { args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure'
   },
