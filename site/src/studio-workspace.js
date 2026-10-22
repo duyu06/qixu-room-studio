@@ -71,6 +71,10 @@ for(const tab of document.querySelectorAll(selector)){
 for(const control of document.querySelectorAll('[data-view]')){
  control.addEventListener('click',()=>{if(!surface.hidden)hidePreview();});
 }
+// The editor refreshes its scene statistics on every mutation; keep analysis linked.
+new MutationObserver(()=>{
+ if(document.querySelector('[data-panel="analysis"].active'))showAnalysis();
+}).observe($('geometry-stats'),{childList:true,subtree:true,characterData:true});
 $('analysis-refresh').addEventListener('click',showAnalysis);
 $('analysis-show-3d').addEventListener('click',()=>{
  hidePreview();document.querySelector('[data-view="3d"]')?.click();
