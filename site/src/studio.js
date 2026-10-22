@@ -3,11 +3,15 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
 import {canWalkAt,findWalkStart} from './studio-tour.js';
+import {SHOWCASE_TEMPLATES,makeShowcaseTemplate} from './showcase-templates.js';
 import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall,
   addOpening,wallPieces,length,interpolated,deleteObject,addFurniture,
   importLegacy,clamp,setOpeningDimension} from './studio-model.js';
 
-const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg',STORE='qixu-studio-v1';
+const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
+const selectedTemplate=new URLSearchParams(location.search).get('template');
+const demoInfo=SHOWCASE_TEMPLATES.find(x=>x.slug===selectedTemplate);
+const STORE=demoInfo?'qixu-studio-demo-'+demoInfo.slug+'-v1':'qixu-studio-v1';
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
@@ -578,5 +582,27 @@ function setView(name){
 try{
  const old=JSON.parse(localStorage.getItem(STORE)||'null');
  if(old&&!validateProject(old))doc=old;
-}catch(err){console.warn('Ignoring corrupted project',err);}
+ else if(demoInfo)doc=makeShowcaseTemplate(demoInfo.slug);
+}catch(err){console.warn('Ignoring corrupted project',err);
+ if(demoInfo)doc=makeShowcaseTemplate(demoInfo.slug);}
 library();refresh();fit();toolMode('select');
+if(demoInfo){
+ const banner=document.createElement('div');banner.className='studio-demo-banner';
+ const copy=document.createElement('div');
+ const tag=document.createElement('strong');tag.textContent='交互式样板间 / '+demoInfo.name;
+ const hint=document.createElement('span');hint.textContent='可以自由移动家具、修改墙门窗。演示进度与个人项目分别保存。';
+ copy.append(tag,hint);
+ const actions=document.createElement('div');
+ const savePersonal=document.createElement('button');savePersonal.type='button';savePersonal.textContent='另存为我的项目 ↗';
+ savePersonal.addEventListener('click',()=>{
+   try{
+     const key='qixu-studio-v1';
+     if(localStorage.getItem(key)&&!confirm('已有个人设计，是否使用当前样板间覆盖它？建议先下载个人设计的 JSON 备份。'))return;
+     localStorage.setItem(key,JSON.stringify(doc));location.href='./studio.html';
+   }catch(err){notify('另存失败，请使用右上角的「保存项目」下载 JSON。');}
+ });
+ const collection=document.createElement('a');collection.href='./showcase.html#collection';collection.textContent='返回样板间';
+ actions.append(savePersonal,collection);banner.append(copy,actions);
+ document.querySelector('.workspace').before(banner);
+ if(new URLSearchParams(location.search).get('view')==='3d')setView('3d');
+}
