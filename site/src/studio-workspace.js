@@ -93,3 +93,22 @@ frame.addEventListener('load',()=>{
   d.head.append(style);
  }catch{ /* Render remains functional if embedded styling is restricted. */ }
 });
+
+ 
+// Deep links from former standalone pages open the relevant tool without
+// navigating away from the active scene. The existing rail remains the source
+// of truth for panel selection.
+const initialPanel=new URLSearchParams(location.search).get('panel') ||
+  location.hash.slice(1);
+if(['structure','library','materials','analysis','render'].includes(initialPanel)){
+  requestAnimationFrame(()=>document.querySelector('[data-panel="'+initialPanel+'"]')?.click());
+}
+// Keep the URL shareable without full document navigation or iframe resets.
+for(const button of document.querySelectorAll('[data-panel]')){
+  button.addEventListener('click',()=>{
+    const selected=button.dataset.panel;
+    const url=new URL(location.href);
+    url.searchParams.set('panel',selected);
+    history.replaceState(null,'',url.pathname+url.search);
+  });
+}
