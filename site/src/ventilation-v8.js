@@ -70,7 +70,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     geom.setAttribute('color',new THREE.BufferAttribute(colors,3));
     part=new THREE.Points(geom,new THREE.PointsMaterial({size:.12,sizeAttenuation:true,vertexColors:true,transparent:true,opacity:.88,blending:THREE.AdditiveBlending,depthWrite:false}));
     part.frustumCulled=false;flowObjects.add(part);
-    part.userData.seeds=Array.from({length:n},(_,i)=>({x:door.x,z:door.z,t:i/n*12,life:i/n*8}));
+    part.userData.seeds=Array.from({length:n},(_,i)=>({x:door.x,z:door.z,t:i/n*1.4,life:0}));
     for(let i=0;i<n;i++){positions[i*3]=door.x;positions[i*3+1]=.13;positions[i*3+2]=door.z;}
     airLabel.textContent='二维势流场已计算 · '+solver.nx+' × '+solver.nz+' 网格 · 进风门青色 / 排风窗金色；移动家具后可重算。';
   }
@@ -144,6 +144,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     solarLight.shadow.camera.top=extent;solarLight.shadow.camera.bottom=-extent;solarLight.shadow.camera.updateProjectionMatrix();
     solarLight.target.position.set(0,0,0);
     solarLight.position.set(x*25,Math.max(.1,y*25),z*25);
+    scene.children.forEach(o=>{if(o.isDirectionalLight&&o!==solarLight)o.intensity=0;});
     solarLight.intensity=pos.altitude>0?2.3:0;
     solarLight.color.set(pos.altitude<16?'#ffd6ac':'#fff5de');
     sunLabel.textContent='太阳高度 '+pos.altitude.toFixed(1)+'° · 方位 '+pos.azimuth.toFixed(1)+'°（真北顺时针）；阴影按所建墙体投射。地理与开口信息仍需校准。';

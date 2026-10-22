@@ -209,13 +209,13 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     const az=(90+phase*180+Number(state.north||0))*Math.PI/180;
     const vertical=18*Math.sin(altitude);
     L.position.set(Math.sin(az)*15,Math.max(1,vertical),-Math.cos(az)*15);
-    L.intensity=day?(2.35*(state.daylight||85)/100):0;
+    L.intensity=0; // Daylight comes from V8 astronomical directional light.
     L.color.set(hour<10||hour>16?'#ffd5a1':'#fff6df');
     ambient.intensity=day?.65:.36;
     evening.intensity=day?.25:Math.max(1.8,Number(state.lampPower||65)/100*5);
     windowGlow.intensity=day?.8:.16;
     spots.forEach((mesh,i)=>{
-      mesh.visible=day&&state.sunOverlay!==false;
+      mesh.visible=false; // V8 uses geometry-driven shadows, not painted sunlight.
       mesh.material.opacity=day?(.34+.16*Math.sin(Math.PI*phase)):0;
       const sweep=(phase-.5)*plan.w*.69;
       mesh.position.x=Math.max(-plan.w*.36,Math.min(plan.w*.36,sweep+
