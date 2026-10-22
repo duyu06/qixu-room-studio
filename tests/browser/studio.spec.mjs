@@ -77,7 +77,7 @@ test('studio mobile 390px layout and tools are reachable',async({page},testInfo)
 test('studio model remains accessible without external scripts',async({page})=>{
  const foreign=[];
  await page.route('**/*',route=>{
-   const url=new URL(route.request().url);
+   const url=new URL(route.request().url());
    if(url.origin==='http://127.0.0.1:4173')return route.continue();
    foreign.push(url.href);return route.abort();
  });
