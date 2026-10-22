@@ -1,0 +1,32 @@
+name: Coohom-style studio acceptance
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  designer-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check editor geometry logic
+        run: node tests/studio-model.test.mjs
+      - name: Install Playwright
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser acceptance
+        run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/studio.spec.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: studio-qa-screenshots
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
