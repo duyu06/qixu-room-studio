@@ -48,7 +48,11 @@ test('smart layout adds movable catalog models inside closed rooms',async({page}
 });
 test('selected wall endpoint can be moved, persisted and undone',async({page})=>{
   await ready(page);
-  await page.locator('[data-wall-id]').first().click();
+  await page.evaluate(()=>{
+    const svg=document.querySelector('#plan-svg'),line=svg.querySelector('[data-wall-id]');
+    const pos=new DOMPoint(-4.6,-3.4).matrixTransform(svg.getScreenCTM());
+    line.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:pos.x,clientY:pos.y,pointerId:2}));
+  });
   const handle=page.locator('[data-endpoint-wall]').first();
   await expect(handle).toBeVisible();
   const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-v1')).walls[0].a);
