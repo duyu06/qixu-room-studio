@@ -6,7 +6,7 @@ const demo=demoId(new URLSearchParams(location.search).get('template'));
 const key=projectStorageKey(demo);
 const frame=$('integrated-render-frame'),surface=$('integrated-preview');
 const source=renderLink(demo);
-let lastScene=null;
+let lastRenderedScene=null;
 function current(){
  try{const doc=JSON.parse(localStorage.getItem(key)||'null');return !validateProject(doc)?doc:null;}
  catch{return null;}
@@ -42,7 +42,7 @@ function showAnalysis(){
  const label=document.createElement('p');label.className='insight-note';
  label.textContent='实际可使用面积需确认墙体是否形成封闭房间；画布包络面积不可用作房地产测绘面积。';
  dest.append(dl,msg,label);
- lastScene=JSON.stringify(doc);
+
 }
 function showRender(force=false){
  const doc=current();
@@ -53,8 +53,8 @@ function showRender(force=false){
  $('plan-svg').hidden=true;
  $('three-viewport').hidden=true;
  const serialized=JSON.stringify(doc);
- if(force||lastScene!==serialized||!frame.getAttribute('src')){
-  lastScene=serialized;
+ if(force||lastRenderedScene!==serialized||!frame.getAttribute('src')){
+  lastRenderedScene=serialized;
   frame.src=source;
  }
  $('status-text').textContent='同一项目 · WebGPU 光照预览';
