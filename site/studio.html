@@ -18,25 +18,35 @@
 <body>
 <div id="app">
  <header class="topbar">
-  <a href="./showcase.html" class="logo qx-brand" data-qixu-brand title="栖序 QIXU 产品首页" aria-label="栖序 QIXU 产品首页"></a>
+  <a href="./studio.html" class="logo qx-brand" data-qixu-brand title="栖序 QIXU 产品首页" aria-label="栖序 QIXU 产品首页"></a>
   <div class="project-name"><span class="crumb">我的工作空间 /</span><input id="project-title" aria-label="项目名称" value="我的第一个空间" maxlength="50"><span class="save" id="save-state">已保存到此浏览器</span></div>
   <div class="top-actions">
    <button id="undo" title="撤销 Ctrl+Z">↶ 撤销</button>
    <button id="redo" title="重做 Ctrl+Shift+Z">↷ 重做</button>
    <span class="separator"></span>
    <button id="export">↓ 保存项目</button><button id="snapshot">▧ 导出视图</button>
-   <span class="qx-nav-slot" data-qixu-nav></span><a class="legacy-link" href="./index.html">风水与气流分析 ↗</a>
+   <span class="studio-unified-caption">统一工作台 · 自动保存</span>
   </div>
  </header>
  <div class="workspace">
   <nav class="rail" aria-label="工具模块">
-   <button class="rail-tab active" data-panel="structure"><b>▦</b><span>户型</span></button>
+   <button class="rail-tab" data-panel="projects"><b>⌂</b><span>项目</span></button>
+    <button class="rail-tab active" data-panel="structure"><b>▦</b><span>户型</span></button>
    <button class="rail-tab" data-panel="library"><b>▣</b><span>家具</span></button>
    <button class="rail-tab" data-panel="materials"><b>◧</b><span>材质</span></button>
    <div class="rail-spacer"></div>
-   <a href="./photoreal.html" data-qixu-render-link class="rail-tab" title="实验性 WebGPU 光照预览"><b>☼</b><span>渲染</span></a>
+   <button class="rail-tab" data-panel="analysis"><b>≋</b><span>分析</span></button>
+    <button class="rail-tab" data-panel="render"><b>☼</b><span>渲染</span></button>
   </nav>
   <aside class="left" id="left-panel">
+   <div class="panel-section" data-sidebar="projects" hidden>
+    <div class="panel-top"><small>MY SPACE</small><h2>我的设计项目</h2><p>所有功能均在当前工作台操作，切换样板间无需跳转。</p></div>
+    <button id="open-personal" class="project-home-action">⌂ 返回我的项目</button>
+    <p class="hint">样板间使用独立存储，不覆盖个人设计。</p>
+    <h3>可编辑样板间</h3>
+    <div id="studio-project-gallery" class="studio-project-gallery"></div>
+    <p id="studio-active-project" class="hint" role="status">当前：我的设计</p>
+   </div>
    <div class="panel-section" data-sidebar="structure">
     <div class="panel-top"><small>FLOOR PLAN</small><h2>户型设计</h2><p>在平面图精确绘制墙体，再一键切换 3D。</p></div>
     <h3>创建与导入</h3>
@@ -93,12 +103,46 @@
       <button data-wall-color="#d1c7be" style="--sw:#d1c7be" title="岩灰"></button>
     </div>
    </div>
+   <div class="panel-section" data-sidebar="analysis" hidden>
+    <div class="panel-top"><small>ANALYSIS</small><h2>空间环境分析</h2><p>气流和太阳方位直接使用当前户型。</p></div>
+    <h3>门窗气流 · 二维势流</h3>
+    <p class="hint">从门口流向窗户，计算相对流动轨迹（不代表实测风速）。</p>
+    <button id="studio-flow-run" class="project-home-action">≋ 重算当前户型气流</button>
+    <p id="studio-flow-status" class="workspace-info" role="status">待计算</p>
+    <h3>八卦 · 文化意象</h3>
+    <label class="check-row"><input id="studio-bagua" type="checkbox"> 显示八方与五行方位</label>
+    <label class="search-label">户型真北偏角（°）
+      <input id="studio-north" type="number" min="-180" max="180" step="1" value="0">
+    </label>
+    <p class="hint">仅为传统文化空间意象展示，不代表真实气流、磁场或建筑吉凶。</p>
+    <h3>太阳实际方位</h3>
+    <p class="hint">手动填写房屋经纬度，不自动推断真实朝向。</p>
+    <div class="studio-sun-fields">
+     <label>纬度<input id="studio-lat" type="number" step=".0001" placeholder="如 31.23"></label>
+     <label>经度<input id="studio-lon" type="number" step=".0001" placeholder="如 121.47"></label>
+     <label>日期<input id="studio-date" type="date"></label>
+     <label>当地小时<input id="studio-hour" type="number" step=".5" min="0" max="23.5" value="14"></label>
+     <label>UTC 时区<input id="studio-tz" type="number" step=".5" min="-12" max="14" value="8"></label>
+    </div>
+    <button id="studio-sun-calc" class="project-home-action">☼ 计算天文太阳方位</button>
+    <p id="studio-sun-status" class="workspace-info" role="status">尚未计算。</p>
+   </div>
+   <div class="panel-section" data-sidebar="render" hidden>
+    <div class="panel-top"><small>RENDER</small><h2>当前项目 · 光照渲染</h2><p>按需启动 WebGPU；不离开本页。</p></div>
+    <h3>渲染采样</h3>
+    <div id="studio-render-samples" class="action-grid"><button data-render-samples="16">快速 16</button><button data-render-samples="32">平衡 32</button><button data-render-samples="64">高质 64</button></div>
+    <h3>墙体模式</h3>
+    <div id="studio-render-walls" class="action-grid"><button data-render-wall="low">低墙剖切</button><button data-render-wall="high">实体墙</button></div>
+    <button id="studio-render-refresh" class="project-home-action">↻ 更新当前渲染</button>
+    <p id="studio-render-status" class="workspace-info" role="status">需要支持 WebGPU 的浏览器/显卡，不支持时可切回普通 3D。</p>
+   </div>
   </aside>
   <main class="center" aria-label="编辑画布">
    <div class="canvas-header">
      <div class="view-pills" role="group" aria-label="视角">
       <button data-view="2d" class="active" aria-pressed="true">▦ 2D 平面</button>
       <button data-view="3d" aria-pressed="false">⬡ 3D 立体</button>
+       <button data-view="render" aria-pressed="false">☼ 渲染</button>
      </div>
      <span class="status-detail" id="mode-description">平面编辑 · 网格吸附</span>
      <div class="canvas-action"><button id="fit-view" title="适配整屋">⊞ 适应画布</button><button id="reset-camera" title="重置相机">⟲</button><button id="tour-toggle" type="button" title="进入第一人称室内漫游">🚶 室内漫游</button></div>
@@ -111,6 +155,7 @@
       <g id="world"></g><g id="preview-layer"></g>
     </svg>
     <div id="three-viewport" hidden></div>
+     <iframe id="studio-render-frame" title="当前户型的 WebGPU 渲染" hidden loading="lazy"></iframe>
     <div class="canvas-help" id="interaction-hint">点选墙体可修改参数；按 W 绘墙，D 添加门，G 添加窗。</div>
     <div class="compass">N <span>↑</span></div>
    </div>

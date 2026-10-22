@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
+import {mountUnifiedStudio} from './studio-unified.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
@@ -13,11 +14,13 @@ import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
 const selectedTemplate=new URLSearchParams(location.search).get('template');
 const demoInfo=SHOWCASE_TEMPLATES.find(x=>x.slug===selectedTemplate);
-const STORE=projectStorageKey(demoInfo?.slug);
+let activeDemo=demoInfo?.slug||null;
+let STORE=projectStorageKey(activeDemo);
 let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
+let unified=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let touring=false,walkYaw=0,walkPitch=0,mouseTurn=null,lastFrame=0;
 const walkPressed=new Set();
@@ -46,7 +49,7 @@ function refresh(){
  if(issues.length)stat('⚠ '+issues.length+' 处家具重叠/墙体碰撞，请检查高亮家具');
  $('geometry-stats').textContent=doc.walls.length+' 段墙 · '+doc.openings.length+' 个门窗 · '+doc.furniture.length+' 件家具';
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
- draw();inspect();if(ready)renderThree();save();
+ draw();inspect();if(ready)renderThree();save();unified?.onProjectChange();
 }
 function change(fn){
  const old=copy();
@@ -71,6 +74,7 @@ function toolMode(name){
 function sidebar(name){
  document.querySelectorAll('[data-panel]').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
  document.querySelectorAll('[data-sidebar]').forEach(p=>p.hidden=p.dataset.sidebar!==name);
+ unified?.activatePanel(name);
 }
 function fit(){
  zoom=1;draw();
@@ -134,6 +138,7 @@ function draw(){
    preview.append(line(...anchor,...current,{class:'preview-wall'}));
    preview.append(el('circle',{cx:anchor[0],cy:anchor[1],r:.1,fill:'#288862'}));
  }
+ unified?.drawOverlay();
  $('zoom-label').textContent=Math.round(zoom*100)+'%';
 }
 const field=(title,key,value,min,max,step=.1)=>
@@ -269,7 +274,7 @@ svg.addEventListener('pointerup',drop);svg.addEventListener('pointercancel',drop
 svg.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom*(e.deltaY>0?.90:1.10),.6,3.6);draw();},{passive:false});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>toolMode(b.dataset.tool)));
 document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',()=>sidebar(b.dataset.panel)));
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.view==='render')sidebar('render');else setView(b.dataset.view);}));
 for(const name of ['show-grid','show-measures'])$(name).addEventListener('change',draw);
 $('fit-view').addEventListener('click',fit);$('reset-camera').addEventListener('click',fit);
 $('undo').addEventListener('click',goBack);$('redo').addEventListener('click',goForward);
@@ -560,6 +565,18 @@ function walkFrame(dt){
  if(canWalkAt(doc,camera.position.x,camera.position.z+dz))camera.position.z+=dz;
 }
 function setView(name){
+ if(name==='render'){
+  view='render';
+  svg.hidden=true;$('three-viewport').hidden=true;
+  $('studio-render-frame').hidden=false;$('interaction-hint').hidden=true;
+  document.querySelectorAll('[data-view]').forEach(b=>{
+   b.classList.toggle('active',b.dataset.view===name);
+   b.setAttribute('aria-pressed',String(b.dataset.view===name));});
+  $('mode-description').textContent='当前项目 · 光照渲染';
+  unified?.enterRender();return;
+ }
+ if(view==='render')unified?.leaveRender();
+ $('studio-render-frame').hidden=true;$('interaction-hint').hidden=false;
  if(name!=='3d'&&touring){touring=false;walkPressed.clear();if(orbit)orbit.enabled=true;
    $('tour-toggle').classList.remove('active');$('tour-toggle').textContent='🚶 室内漫游';}
  view=name;
@@ -582,6 +599,24 @@ try{
 }catch(err){console.warn('Ignoring corrupted project',err);
  if(demoInfo)doc=makeShowcaseTemplate(demoInfo.slug);}
 library();refresh();fit();toolMode('select');
+unified=mountUnifiedStudio({
+ readDoc:()=>doc,
+ readDemo:()=>activeDemo,
+ setView,
+ draw,
+ switchProject:(slug)=>{
+   save();activeDemo=slug;STORE=projectStorageKey(slug);
+   let next=null;
+   try{const cached=JSON.parse(localStorage.getItem(STORE)||'null');
+     if(cached&&!validateProject(cached))next=cached;}
+   catch(err){console.warn('Could not restore project',err);}
+   next ||= slug?makeShowcaseTemplate(slug):createProject();
+   useDoc(next,slug?'样板间已在当前工作台打开':'已返回我的项目');
+   demoXray=Boolean(slug);
+   document.querySelector('.studio-demo-banner')?.remove();
+   setView('3d');
+ }
+});
 if(demoInfo){
  const banner=document.createElement('div');banner.className='studio-demo-banner';
  const copy=document.createElement('div');

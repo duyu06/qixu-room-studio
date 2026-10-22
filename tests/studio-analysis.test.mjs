@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {makeShowcaseTemplate} from '../site/src/showcase-templates.js';
+import {projectAirflow,flowTrajectories,localSolarDate} from '../site/src/studio-analysis.js';
+const doc=makeShowcaseTemplate('sunlit');
+const {solver,door,window}=projectAirflow(doc,35);
+assert.ok(solver.nx===35&&solver.nz>20);
+assert.ok(Number.isFinite(door.x)&&Number.isFinite(window.z));
+assert.ok(!Number.isNaN(solver.velocity(door.x,door.z).speed));
+const flow=flowTrajectories(doc,6);
+assert.equal(flow.nx,64);
+assert.ok(flow.routes.every(x=>x.every(p=>p.every(Number.isFinite))));
+const d=localSolarDate({latitude:31,longitude:121,date:'2026-10-22',time:15.5,timezone:8});
+assert.equal(d.toISOString(),'2026-10-22T07:30:00.000Z');
+assert.throws(()=>localSolarDate({latitude:111,longitude:121,date:'2026-10-22',time:13,timezone:8}));
+console.log('Studio shared air/solar model validated');

@@ -12,37 +12,30 @@ test('official user logo displays on showcase, editor, legacy and renderer',asyn
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href','./assets/qixu-logo-mark.png');
  }
 });
-test('all four product surfaces share a single reachable navigation map',async({page})=>{
- for(const path of ['/showcase.html','/studio.html','/index.html','/photoreal.html']){
+test('Studio is a single page workspace; legacy pages retain compatibility navigation',async({page})=>{
+ await page.goto('/studio.html');
+ await expect(page.locator('[data-panel]')).toHaveCount(6);
+ await expect(page.locator('.qx-hub-menu')).toHaveCount(0);
+ for(const path of ['/showcase.html','/index.html','/photoreal.html']){
   await page.goto(path);
-  const summary=page.getByText('切换模块',{exact:true});
-  await expect(summary).toBeVisible();
-  await summary.click();
-  const entries=page.locator('.qx-hub-links a');
-  await expect(entries).toHaveCount(4);
-  for(const name of ['产品展示','专业设计','空间分析','光照预览']){
-   await expect(entries.getByText(name,{exact:true})).toBeVisible();
-  }
-  const current=await page.evaluate(()=>location.pathname.split('/').pop());
-  const active=await page.locator('.qx-hub-links a[aria-current="page"]').count();
-  expect(active,current).toBe(1);
+  await page.getByText('切换模块',{exact:true}).click();
+  await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
  }
 });
-test('3D showcase project flows to correct WebGPU preview, not personal project',async({page})=>{
+test('Studio demo projects stay in one browser URL through inline GPU preview',async({page})=>{
  await page.goto('/studio.html');
  const before=await page.evaluate(()=>localStorage.getItem('qixu-studio-v1'));
- await page.goto('/studio.html?template=sunlit&view=2d');
- await expect(page.locator('.studio-demo-banner')).toBeVisible();
- const demo=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
- expect(demo?.title).toContain('日光都市公寓');
- const renderLink=page.locator('[data-qixu-render-link]');
- await expect(renderLink).toHaveAttribute('href','./photoreal.html?template=sunlit');
- // Simulate a browser without WebGPU; accepted demo data reaches the capability gate.
+ await page.locator('[data-panel="projects"]').click();
+ await page.locator('[data-project="sunlit"]').click();
+ await expect(page).toHaveURL(/\/studio\.html$/);
+ await expect(page.locator('#three-viewport canvas')).toBeVisible({timeout:20000});
  await page.addInitScript(()=>Object.defineProperty(navigator,'gpu',{configurable:true,value:undefined}));
- await renderLink.click();
- await expect(page).toHaveURL(/photoreal\.html\?template=sunlit/);
- await expect(page.locator('#overlay')).toContainText('没有启用 WebGPU',{timeout:10000});
- await expect(page.locator('[data-qixu-studio-link]')).toHaveAttribute('href','./studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="render"]').click();
+ await expect(page.locator('#studio-render-frame')).toBeVisible();
+ await expect(page.locator('#studio-render-frame')).toHaveAttribute('src',/photoreal\.html\?embed=1&template=sunlit/);
+ await expect(page.frameLocator('#studio-render-frame').locator('#overlay'))
+   .toContainText('没有启用 WebGPU',{timeout:12000});
+ await expect(page).toHaveURL(/\/studio\.html$/);
  expect(await page.evaluate(()=>localStorage.getItem('qixu-studio-v1'))).toBe(before);
 });
 test('shared header and switcher work on 390px mobile',async({page})=>{
@@ -50,8 +43,12 @@ test('shared header and switcher work on 390px mobile',async({page})=>{
  for(const url of ['/showcase.html','/studio.html','/index.html']){
   await page.goto(url);
   await expect(page.locator('[data-qixu-brand] img').first()).toBeVisible();
-  await page.getByText('切换模块',{exact:true}).click();
-  await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
+  if(url==='/studio.html'){
+   await expect(page.locator('[data-panel]')).toHaveCount(6);
+  }else{
+   await page.getByText('切换模块',{exact:true}).click();
+   await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
+  }
   // No horizontal overflow should be introduced by the shared logo/menu.
   const widths=await page.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   expect(widths[0],url+' horizontal overflow').toBeLessThanOrEqual(widths[1]+3);
