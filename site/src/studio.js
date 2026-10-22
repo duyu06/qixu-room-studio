@@ -13,6 +13,7 @@ const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
 const selectedTemplate=new URLSearchParams(location.search).get('template');
 const demoInfo=SHOWCASE_TEMPLATES.find(x=>x.slug===selectedTemplate);
 const STORE=demoInfo?'qixu-studio-demo-'+demoInfo.slug+'-v1':'qixu-studio-v1';
+let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
@@ -421,7 +422,10 @@ function renderThree(){
   const group=new THREE.Group();group.position.set(wall.a[0],0,wall.a[1]);
   group.rotation.y=-Math.atan2(dz,dx);
   group.userData.selection={kind:'wall',id:wall.id};
-  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.89});
+  const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
+  const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
+  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.89,
+    transparent:fadeWall,opacity:fadeWall?.2:1,depthWrite:!fadeWall,side:THREE.DoubleSide});
   for(const piece of wallPieces(doc,wall)){
    buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,doc.thickness,
      (piece.start+piece.end)/2,(piece.top+piece.bottom)/2,0);
@@ -584,6 +588,14 @@ if(demoInfo){
  const hint=document.createElement('span');hint.textContent='可以自由移动家具、修改墙门窗。演示进度与个人项目分别保存。';
  copy.append(tag,hint);
  const actions=document.createElement('div');
+ const xrayButton=document.createElement('button');xrayButton.type='button';
+ xrayButton.textContent='显示完整墙体';
+ xrayButton.title='透视墙仅用于观看，项目真实几何和门窗开孔保持不变';
+ xrayButton.addEventListener('click',()=>{
+   demoXray=!demoXray;
+   xrayButton.textContent=demoXray?'显示完整墙体':'开启透视墙';
+   if(ready)renderThree();
+ });
  const savePersonal=document.createElement('button');savePersonal.type='button';savePersonal.textContent='另存为我的项目 ↗';
  savePersonal.addEventListener('click',()=>{
    try{
@@ -593,7 +605,7 @@ if(demoInfo){
    }catch(err){notify('另存失败，请使用右上角的「保存项目」下载 JSON。');}
  });
  const collection=document.createElement('a');collection.href='./showcase.html#collection';collection.textContent='返回样板间';
- actions.append(savePersonal,collection);banner.append(copy,actions);
+ actions.append(xrayButton,savePersonal,collection);banner.append(copy,actions);
  document.querySelector('.workspace').before(banner);
  if(new URLSearchParams(location.search).get('view')==='3d')setView('3d');
 }
