@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8f9f7">
+<title>栖序 Studio · 专业户型设计工作台</title>
+<meta name="description" content="2D/3D 一体化户型设计、墙体门窗、家具布局、尺寸编辑与项目保存">
+<link rel="stylesheet" href="./studio.css">
+<script type="importmap">{"imports":{
+  "three":"./vendor/three/build/three.module.js",
+  "three/addons/":"./vendor/three/addons/"
+}}</script>
+<script type="module" src="./src/studio.js"></script>
+</head>
+<body>
+<div id="app">
+ <header class="topbar">
+  <a href="./index.html" class="logo" title="返回旧版实验室"><span class="logo-symbol">序</span><span>栖序 <small>STUDIO</small></span></a>
+  <div class="project-name"><span class="crumb">我的工作空间 /</span><input id="project-title" aria-label="项目名称" value="我的第一个空间" maxlength="50"><span class="save" id="save-state">已保存到此浏览器</span></div>
+  <div class="top-actions">
+   <button id="undo" title="撤销 Ctrl+Z">↶ 撤销</button>
+   <button id="redo" title="重做 Ctrl+Shift+Z">↷ 重做</button>
+   <span class="separator"></span>
+   <button id="export">↓ 保存项目</button><button id="snapshot">▧ 导出视图</button>
+   <a class="legacy-link" href="./index.html">风水与气流分析 ↗</a>
+  </div>
+ </header>
+ <div class="workspace">
+  <nav class="rail" aria-label="工具模块">
+   <button class="rail-tab active" data-panel="structure"><b>▦</b><span>户型</span></button>
+   <button class="rail-tab" data-panel="library"><b>▣</b><span>家具</span></button>
+   <button class="rail-tab" data-panel="materials"><b>◧</b><span>材质</span></button>
+   <div class="rail-spacer"></div>
+   <a href="./photoreal.html" class="rail-tab" title="实验性 WebGPU 光照预览"><b>☼</b><span>渲染</span></a>
+  </nav>
+  <aside class="left" id="left-panel">
+   <div class="panel-section" data-sidebar="structure">
+    <div class="panel-top"><small>FLOOR PLAN</small><h2>户型设计</h2><p>在平面图精确绘制墙体，再一键切换 3D。</p></div>
+    <h3>创建与导入</h3>
+    <div class="action-grid">
+      <button id="new-project">＋ 空白户型</button><button id="load-sample">⌂ 示例户型</button>
+      <button id="import-legacy">↳ 读取旧版</button><button id="import-file">↑ 导入项目</button>
+      <button id="load-image">▧ 添加参考底图</button>
+    </div>
+    <input type="file" id="file-json" accept=".json,application/json" hidden>
+    <input type="file" id="file-image" accept="image/png,image/jpeg,image/webp" hidden>
+    <p class="hint">底图用于人工描线，不会冒充准确的 CAD 识别结果。</p>
+    <h3>绘制工具</h3>
+    <div class="tool-list">
+     <button class="tool active" data-tool="select"><span>↖</span><div><strong>选择 / 拖动</strong><small>编辑现有对象</small></div><kbd>V</kbd></button>
+     <button class="tool" data-tool="wall"><span>╱</span><div><strong>绘制墙体</strong><small>点两下确定一段墙</small></div><kbd>W</kbd></button>
+     <button class="tool" data-tool="door"><span>◫</span><div><strong>添加门洞</strong><small>点击需要开门的墙体</small></div><kbd>D</kbd></button>
+     <button class="tool" data-tool="window"><span>▤</span><div><strong>添加窗户</strong><small>点击墙体生成窗洞</small></div><kbd>G</kbd></button>
+    </div>
+    <h3>标注</h3>
+    <label class="check-row"><input type="checkbox" id="show-measures" checked> 显示墙段尺寸</label>
+    <label class="check-row"><input type="checkbox" id="show-grid" checked> 显示吸附网格（10 cm）</label>
+   </div>
+   <div class="panel-section" data-sidebar="library" hidden>
+    <div class="panel-top"><small>FURNITURE</small><h2>家具素材库</h2><p>选择家具后在画布中拖动、旋转和调整尺寸。</p></div>
+    <label class="search-label">搜索家具<input id="model-search" type="search" placeholder="床、沙发、柜子…"></label>
+    <div id="furniture-library" class="library-grid"></div>
+    <p class="hint">当前是用于空间规划的简化 3D 参数化模型，不是品牌授权的真实商品模型。</p>
+   </div>
+   <div class="panel-section" data-sidebar="materials" hidden>
+    <div class="panel-top"><small>MATERIALS</small><h2>墙地面材质</h2><p>材质即时同步到 3D 视图。</p></div>
+    <h3>地面配色</h3>
+    <div class="swatches" id="floor-swatches">
+      <button data-floor="#ded4c3" style="--sw:#ded4c3" title="浅橡木"></button>
+      <button data-floor="#bda58a" style="--sw:#bda58a" title="胡桃木"></button>
+      <button data-floor="#d9d8d2" style="--sw:#d9d8d2" title="浅灰石"></button>
+      <button data-floor="#eee5d8" style="--sw:#eee5d8" title="米白砖"></button>
+    </div>
+    <h3>墙体配色</h3>
+    <div class="swatches" id="wall-swatches">
+      <button data-wall-color="#fffaf0" style="--sw:#fffaf0" title="暖白"></button>
+      <button data-wall-color="#e9e6dc" style="--sw:#e9e6dc" title="亚麻"></button>
+      <button data-wall-color="#c8d1ca" style="--sw:#c8d1ca" title="鼠尾草绿"></button>
+      <button data-wall-color="#d1c7be" style="--sw:#d1c7be" title="岩灰"></button>
+    </div>
+   </div>
+  </aside>
+  <main class="center" aria-label="编辑画布">
+   <div class="canvas-header">
+     <div class="view-pills" role="group" aria-label="视角">
+      <button data-view="2d" class="active" aria-pressed="true">▦ 2D 平面</button>
+      <button data-view="3d" aria-pressed="false">⬡ 3D 立体</button>
+     </div>
+     <span class="status-detail" id="mode-description">平面编辑 · 网格吸附</span>
+     <div class="canvas-action"><button id="fit-view" title="适配整屋">⊞ 适应画布</button><button id="reset-camera" title="重置相机">⟲</button></div>
+   </div>
+   <div class="canvas" id="canvas-wrap">
+    <svg id="plan-svg" xmlns="http://www.w3.org/2000/svg" aria-label="可编辑二维户型图" tabindex="0">
+      <defs><pattern id="grid" width=".5" height=".5" patternUnits="userSpaceOnUse">
+       <path d="M .5 0 L 0 0 0 .5" fill="none" stroke="#cedbd5" stroke-width=".009"/>
+      </pattern></defs>
+      <g id="world"></g><g id="preview-layer"></g>
+    </svg>
+    <div id="three-viewport" hidden></div>
+    <div class="canvas-help" id="interaction-hint">点选墙体可修改参数；按 W 绘墙，D 添加门，G 添加窗。</div>
+    <div class="compass">N <span>↑</span></div>
+   </div>
+   <div class="statusbar">
+     <span><i class="status-dot"></i><span id="status-text">工作台已准备</span></span>
+     <span id="geometry-stats">—</span>
+     <span>单位：米 · <span id="zoom-label">100%</span></span>
+   </div>
+  </main>
+  <aside class="properties">
+   <div class="props-head"><small>PROPERTIES</small><h2>属性面板</h2></div>
+   <div id="property-body"></div>
+   <div class="props-footer"><strong>栖序 · 房间设计</strong><p>仅提供空间设计与装饰预览，不替代建筑施工图或工程审查。</p></div>
+  </aside>
+ </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body></html>
