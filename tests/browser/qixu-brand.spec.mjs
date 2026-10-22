@@ -15,11 +15,8 @@ test('official user logo displays on showcase, editor, legacy and renderer',asyn
 test('product landing and legacy modules link to one primary studio',async({page})=>{
  for(const path of ['/showcase.html','/index.html','/photoreal.html']){
   await page.goto(path);
-  if(url==='/studio.html')await expect(page.locator('[data-panel]')).toHaveCount(5);
-  else{
-   await page.getByText('切换模块',{exact:true}).click();
-   await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
-  }
+  await page.getByText('切换模块',{exact:true}).click();
+  await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
  }
  await page.goto('/studio.html');
  await expect(page.locator('[data-panel]')).toHaveCount(5);
@@ -36,14 +33,16 @@ test('showcase uses same editable project in embedded rendering',async({page})=>
  await expect(page).toHaveURL(/studio\.html\?template=sunlit/);
  expect(await page.evaluate(()=>localStorage.getItem('qixu-studio-v1'))).toBe(personal);
 });
-test('shared header and switcher work on 390px mobile',async({page})=>{
+test('responsive logo and unified tools work on 390px mobile',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  for(const url of ['/showcase.html','/studio.html','/index.html']){
   await page.goto(url);
   await expect(page.locator('[data-qixu-brand] img').first()).toBeVisible();
-  await page.getByText('切换模块',{exact:true}).click();
-  await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
-  // No horizontal overflow should be introduced by the shared logo/menu.
+  if(url==='/studio.html')await expect(page.locator('[data-panel]')).toHaveCount(5);
+  else {
+   await page.getByText('切换模块',{exact:true}).click();
+   await expect(page.locator('.qx-hub-links a')).toHaveCount(4);
+  }
   const widths=await page.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   expect(widths[0],url+' horizontal overflow').toBeLessThanOrEqual(widths[1]+3);
  }
