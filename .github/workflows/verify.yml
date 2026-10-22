@@ -20,3 +20,4 @@ jobs:
           node tests/space-model.test.mjs
           node tests/history-model.test.mjs
           node tests/connected-layout.test.mjs
+          node tests/ventilation.test.mjs
