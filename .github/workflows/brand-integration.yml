@@ -1,0 +1,29 @@
+name: Qixu brand and linked project QA
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  navigation-and-brand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/qixu-routes.test.mjs
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - name: Check consistent logo and project routing
+        run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/qixu-brand.spec.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: brand-and-routing-failures
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
