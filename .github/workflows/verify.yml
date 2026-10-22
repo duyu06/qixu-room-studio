@@ -22,3 +22,5 @@ jobs:
           node tests/connected-layout.test.mjs
           node tests/ventilation.test.mjs
           node tests/solar-cfd.test.mjs
+          node tests/image-integrity.test.mjs
+          node tests/release-gate.test.mjs
