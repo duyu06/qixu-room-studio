@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createVentilationStudio } from './ventilation-v8.js';
 import { createAtmosphere } from './atmosphere-v7.js';
 /* V6: turn raster floor plans into schematic, editable 3D walls.
    All recognition is local. The result is not a measured BIM model. */
@@ -26,6 +27,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   pane.innerHTML='<b>户型图 → 立体空间</b><p id="plan-status">上传平面图后，会在同一个 3D 场景重建估算墙线。</p><div class="plan-actions"><button id="plan-edit" type="button">补画墙体</button><button id="plan-undo" type="button">删除上一段墙</button><button id="plan-overlay" type="button">切换底图</button></div><p>补画模式：俯视图依次点击起点和终点。扫描存在误检，真实尺寸与门窗须人工确认。</p>';
   $('dropzone').after(pane);
   const atmosphere=createAtmosphere({scene,renderer,state,host:pane,onWallModeChange:()=>renderPlan(false)});
+  const physics=createVentilationStudio({scene,renderer,state,host:pane,camera,orbit});
   const planStatus=pane.querySelector('#plan-status');
   const sampleBox={left:46,top:44,right:421,bottom:482};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -74,6 +76,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     orbit.target.set(0,0,0);orbit.update();}
     planStatus.textContent=plan.note+' · '+plan.walls.length+' 段墙体。宽高均为示意比例，非真实测量。';
     atmosphere.onPlan(plan,overlay);
+    physics.onPlan(plan);
   }
   function genericWalls(ctx,w,h){
     const pixels=ctx.getImageData(0,0,w,h).data;
@@ -158,6 +161,10 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   };
   renderer.domElement.addEventListener('pointerdown',e=>{
     if(!plan||e.button!==0)return;
+    if(physics.isMarking()){
+      if(fromPointer(e))physics.place(hit.x,hit.z);
+      e.preventDefault();e.stopImmediatePropagation();return;
+    }
     if(!editing){
       const rect=renderer.domElement.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);
@@ -192,7 +199,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   },true);
   renderer.domElement.addEventListener('pointerup',e=>{
     if(moving===null)return;
-    moving=null;orbit.enabled=true;persist();e.stopImmediatePropagation();
+    moving=null;orbit.enabled=true;persist();physics.rebuild();e.stopImmediatePropagation();
   },true);
   window.addEventListener('keydown',e=>{
     if(!plan||moving!==null||['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;

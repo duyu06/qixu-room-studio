@@ -69,7 +69,7 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     const b = e.target.closest('[data-mode]'); if (!b) return;
     flowMode = b.dataset.mode;
     panel.querySelectorAll('[data-mode]').forEach(n => n.classList.toggle('active', n === b));
-    panel.querySelector('#v7-flow-label').textContent = b.textContent;
+    panel.querySelector('#v7-flow-label').textContent = '旧版艺术流场（已由 V8 物理模块替代）';
     recolor();
   });
   flowToggle.addEventListener('change', () => {
@@ -242,8 +242,8 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     }
     updateLighting();
     if (!particles || !field)return;
-    field.visible=flowToggle.checked;
-    if(!flowToggle.checked)return;
+    field.visible=false; // V8 model supersedes decorative V7 motion
+    if(true)return; // Dynamic ventilation is now calculated by V8
     elapsed+=dt*.20*Math.max(0,Number(state.flowSpeed??100)/100);
     const r=Math.min(plan.w,plan.d)*.34;
     const n=Math.max(0,Math.min(seeds.length,Number(state.flowDensity??180)));
