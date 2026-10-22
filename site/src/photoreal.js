@@ -1,3 +1,4 @@
+import {studioToRenderPayload,renderWallPieces} from './studio-render-bridge.js';
 // Load heavy WebGPU imports after capability checks.
 let Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,
 CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,
@@ -6,8 +7,14 @@ Vector3,OrbitControls,WebGPUPathTracer;
 const viewer=document.querySelector('#viewer'),msg=document.querySelector('#overlay'),info=document.querySelector('#info');
 let tracer=null,renderer=null,scene=null,camera=null,controls=null,mode='low',roomGroup=null;
 let saved=null,saveReadError=false;
-try{saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');}
-catch(err){saveReadError=true;console.warn('Invalid saved floorplan',err);}
+try{
+  const studio=JSON.parse(localStorage.getItem('qixu-studio-v1')||'null');
+  if(studio?.schema==='qixu-studio')saved=studioToRenderPayload(studio);
+}catch(err){saveReadError=true;console.warn('Invalid saved studio project',err);}
+if(!saved){
+  try{saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');}
+  catch(err){saveReadError=true;console.warn('Invalid legacy floorplan',err);}
+}
 function fail(message) {msg.textContent=message;msg.classList.add('failure');info.textContent=message;info.classList.add('failure');}
 function cropImage(src,crop){
   return new Promise((resolve,reject)=>{
@@ -25,23 +32,33 @@ async function rebuild(){
   if(roomGroup){scene.remove(roomGroup);roomGroup.traverse(o=>{o.geometry?.dispose();o.material?.map?.dispose?.();o.material?.dispose?.()})}
   const p=saved.plan;roomGroup=new Group();roomGroup.name='renderable-floorplan';scene.add(roomGroup);
   const mat=new MeshStandardMaterial({color:0xfff7ea,roughness:.86,metalness:0});
-  const crop=await cropImage(saved.image,p.crop);
-  const texture=new CanvasTexture(crop);texture.colorSpace=SRGBColorSpace;
-  const floor=new Mesh(new PlaneGeometry(p.w,p.d),new MeshStandardMaterial({map:texture,roughness:.84,metalness:0,side:2}));
+  let floorMaterial=new MeshStandardMaterial({color:saved.studio?.floor||'#e4d7c5',roughness:.84,metalness:0,side:2});
+  if(saved.image){
+    const crop=await cropImage(saved.image,p.crop);
+    const texture=new CanvasTexture(crop);texture.colorSpace=SRGBColorSpace;
+    floorMaterial.map=texture;floorMaterial.color.set('#ffffff');
+  }
+  const floor=new Mesh(new PlaneGeometry(p.w,p.d),floorMaterial);
   floor.rotation.x=-Math.PI/2;floor.position.y=.01;roomGroup.add(floor);
   const coordinate=(x,y)=>({
     x:(x-p.crop.left)/(p.crop.right-p.crop.left)*p.w-p.w/2,
     z:(y-p.crop.top)/(p.crop.bottom-p.crop.top)*p.d-p.d/2
   });
-  for(const [x1,y1,x2,y2] of p.walls){
-    const a=coordinate(x1,y1),b=coordinate(x2,y2);
-    const len=Math.hypot(b.x-a.x,b.z-a.z);
-    if(len<.1)continue;
-    const h=mode==='low'?1.20:2.55;
-    const wall=new Mesh(new BoxGeometry(len,h,.11),mat.clone());
-    wall.position.set((a.x+b.x)/2,h/2+.045,(a.z+b.z)/2);
-    wall.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
-    roomGroup.add(wall);
+  if(saved.studio){
+    for(const piece of renderWallPieces(saved.studio,mode)){
+      const wall=new Mesh(new BoxGeometry(piece.length,piece.height,piece.thickness),
+        new MeshStandardMaterial({color:saved.studio.wallColor||'#fff8eb',roughness:.88}));
+      wall.position.set(piece.x,piece.y,piece.z);wall.rotation.y=piece.rotation;roomGroup.add(wall);
+    }
+  }else{
+    for(const [x1,y1,x2,y2] of p.walls){
+      const a=coordinate(x1,y1),b=coordinate(x2,y2),len=Math.hypot(b.x-a.x,b.z-a.z);
+      if(len<.1)continue;
+      const h=mode==='low'?1.2:2.55;
+      const wall=new Mesh(new BoxGeometry(len,h,.11),mat.clone());
+      wall.position.set((a.x+b.x)/2,h/2+.045,(a.z+b.z)/2);
+      wall.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);roomGroup.add(wall);
+    }
   }
   mat.dispose();
   const palette=[0xaf9679,0x8b977d,0xb78d71,0x6e8891,0xa6a8a1];
@@ -58,7 +75,7 @@ async function rebuild(){
 }
 async function init(){
   if(saveReadError){fail('本机保存的户型数据已损坏，请返回编辑器重新导入完整项目。此页面不会自动删除旧数据。');return;}
-  if(!saved?.plan?.walls?.length||!saved?.plan?.crop||!saved?.image){
+  if(!saved?.plan?.walls?.length||!saved?.plan?.crop||(!saved?.image&&!saved?.studio)){
     fail('当前浏览器尚无已保存户型图，或保存数据无效。请返回编辑器上传户型图，再打开预览。');return;
   }
   if(!navigator.gpu){fail('当前浏览器没有启用 WebGPU，请使用较新的 Chrome/Edge 和支持 WebGPU 的显卡驱动。主编辑器仍可正常使用。');return;}
