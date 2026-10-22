@@ -54,7 +54,6 @@ export function calculateRooms(walls){
            Math.atan2(q[1]-v.p[1],q[0]-v.p[0]);
   }));
   const visited=new Set(),faces=[],limit=edges.size*2+4;
-  for(const [u,v]of edges.values().length?[]:[]){/* no-op: face start below */}
   for(const [start,v]of verts)for(const next of neighbors.get(start)){
     const first=start+'>'+next;if(visited.has(first))continue;
     let a=start,b=next,ring=[],closed=false;

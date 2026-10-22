@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
+import {parseDxf,exportDxf} from './studio-dxf.js';
 import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall,
   addOpening,wallPieces,length,interpolated,deleteObject,addFurniture,
   importLegacy,clamp,setOpeningDimension} from './studio-model.js';
@@ -28,6 +30,10 @@ function save(){
 }
 function refresh(){
  $('project-title').value=doc.title;
+ const takeoff=materialTakeoff(doc);
+ $('studio-room-summary').textContent=takeoff.rooms.length+' 个闭合空间 · '+takeoff.totalFloorAreaM2.toFixed(2)+' ㎡ · 墙体净面积 '+takeoff.netWallAreaM2.toFixed(2)+' ㎡';
+ const issues=furnitureDiagnostics(doc);
+ if(issues.length)stat('⚠ '+issues.length+' 处家具重叠/墙体碰撞，请检查高亮家具');
  $('geometry-stats').textContent=doc.walls.length+' 段墙 · '+doc.openings.length+' 个门窗 · '+doc.furniture.length+' 件家具';
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  draw();inspect();if(ready)renderThree();save();
@@ -75,6 +81,14 @@ function draw(){
  if($('show-grid').checked)world.append(el('rect',{x:-doc.width/2-1,y:-doc.depth/2-1,width:doc.width+2,height:doc.depth+2,fill:'url(#grid)'}));
  world.append(el('rect',{x:-doc.width/2,y:-doc.depth/2,width:doc.width,height:doc.depth,fill:doc.floor,stroke:'#d2d7d0','stroke-width':.04}));
  if(doc.reference)world.append(el('image',{x:-doc.width/2,y:-doc.depth/2,width:doc.width,height:doc.depth,href:doc.reference,opacity:.53,preserveAspectRatio:'none'}));
+ const rooms=calculateRooms(doc.walls);
+ rooms.forEach((room,i)=>{
+   world.append(el('polygon',{points:room.polygon.map(p=>p.join(',')).join(' '),
+     fill:i%2?'#65a58a':'#8ab7a1','fill-opacity':'.12','pointer-events':'none'}));
+   world.append(el('text',{x:room.centroid[0],y:room.centroid[1],class:'room-label'},
+     '区域 '+(i+1)+' · '+room.area.toFixed(1)+'㎡'));
+ });
+ const collisionIds=new Set(furnitureDiagnostics(doc).map(x=>x.id));
  for(const wall of doc.walls){
    const picked=selection?.id===wall.id;
    world.append(line(...wall.a,...wall.b,{class:'wall-base'+(picked?' selected':''),'stroke-width':doc.thickness}));
@@ -83,8 +97,11 @@ function draw(){
      const mid=interpolated(wall,.5),L=length(wall),dx=wall.b[0]-wall.a[0],dy=wall.b[1]-wall.a[1];
      world.append(el('text',{x:mid[0]-dy/L*.27,y:mid[1]+dx/L*.27,class:'wall-label'},L.toFixed(2)+'m'));
    }
-   if(picked)for(const v of [wall.a,wall.b])
-     world.append(el('circle',{cx:v[0],cy:v[1],r:.11,class:'selection-dot'}));
+   if(picked)for(const which of ['a','b']){
+     const v=wall[which];
+     world.append(el('circle',{cx:v[0],cy:v[1],r:.13,class:'selection-dot wall-handle',
+       'data-endpoint-wall':wall.id,'data-endpoint-side':which}));
+   }
  }
  for(const o of doc.openings){
    const w=doc.walls.find(x=>x.id===o.wallId);if(!w)continue;
@@ -99,7 +116,7 @@ function draw(){
    const g=el('g',{transform:'translate('+f.x+' '+f.z+') rotate('+(f.rotation*180/Math.PI)+')',
      'data-furniture-id':f.id});
    g.append(el('rect',{x:-f.width/2,y:-f.depth/2,width:f.width,height:f.depth,rx:.06,
-     class:'furniture-rect'+(selection?.id===f.id?' selected':'')}));
+     class:'furniture-rect'+(selection?.id===f.id?' selected':'')+(collisionIds.has(f.id)?' collision':'')}));
    g.append(el('text',{x:0,y:.06,class:'furniture-label'},FURNITURE[f.type].label));
    world.append(g);
  }
@@ -178,6 +195,14 @@ svg.addEventListener('pointerdown',e=>{
   else {anchor=q;current=q;draw();stat('已选择起点，点击第二点完成墙体');}
   e.preventDefault();return;
  }
+ const endpoint=e.target.closest('[data-endpoint-wall]');
+ if(endpoint && tool==='select'){
+   const w=doc.walls.find(w=>w.id===endpoint.dataset.endpointWall);
+   if(w){picked('wall',w.id);drag={type:'endpoint',id:w.id,side:endpoint.dataset.endpointSide,
+     p,from:[...w[endpoint.dataset.endpointSide]],before:copy(),moved:false};
+     try{svg.setPointerCapture(e.pointerId);}catch{}}
+   return;
+ }
  const furniture=e.target.closest('[data-furniture-id]');
  const opening=e.target.closest('[data-opening-id]');
  const wall=e.target.closest('[data-wall-id]');
@@ -201,15 +226,33 @@ svg.addEventListener('pointermove',e=>{
  current=screenPoint(e);if(!current)return;
  if(tool==='wall'&&anchor){draw();return;}
  if(!drag)return;
+ const next=[drag.from[0]+current[0]-drag.p[0],drag.from[1]+current[1]-drag.p[1]];
+ if(drag.type==='endpoint'){
+   const w=doc.walls.find(x=>x.id===drag.id);if(!w)return;
+   const previous=[...w[drag.side]];
+   const snapped=snapPosition(next,doc);
+   for(const segment of doc.walls){
+     for(const side of ['a','b']){
+       if(Math.hypot(segment[side][0]-previous[0],segment[side][1]-previous[1])<.011)
+         segment[side]=[...snapped];
+     }
+   }
+   drag.moved=true;draw();e.preventDefault();return;
+ }
  const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
- const point=snapPosition([drag.from[0]+current[0]-drag.p[0],drag.from[1]+current[1]-drag.p[1]],doc);
+ const point=snapPosition(next,doc);
  f.x=clamp(point[0],-doc.width/2+f.width/2,doc.width/2-f.width/2);
  f.z=clamp(point[1],-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
  drag.moved=true;draw();e.preventDefault();
 });
 const drop=()=>{
  if(!drag)return;
- if(drag.moved){history.push(drag.before);future=[];refresh();}
+ if(drag.moved){
+   const error=validateProject(doc);
+   if(error){doc=drag.before;notify('墙体修改已取消：'+error);}
+   else{history.push(drag.before);future=[];}
+   refresh();
+ }
  drag=null;
 };
 svg.addEventListener('pointerup',drop);svg.addEventListener('pointercancel',drop);
@@ -234,6 +277,16 @@ $('import-legacy').addEventListener('click',()=>{
  catch(e){notify('迁移失败：'+e.message);}
 });
 $('import-file').addEventListener('click',()=>$('file-json').click());
+$('import-dxf').addEventListener('click',()=>$('file-dxf').click());
+$('file-dxf').addEventListener('change',async e=>{
+  const f=e.target.files?.[0];e.target.value='';
+  if(!f)return;
+  if(f.size>5_000_000){notify('DXF 文件不能超过 5MB');return;}
+  try{
+    const converted=parseDxf(await f.text(),$('dxf-units').value);
+    useDoc(converted.project,'已导入 '+converted.wallCount+' 条 DXF 墙线（单位：'+converted.units+'）。请核对墙体与门窗。');
+  }catch(err){notify('DXF 导入失败：'+err.message);}
+});
 $('file-json').addEventListener('change',async e=>{
  const f=e.target.files?.[0];e.target.value='';if(!f)return;
  if(f.size>14e6)return notify('项目文件超出 14 MB');
@@ -257,6 +310,33 @@ function download(name,type,source){
  const a=document.createElement('a');a.href=url;a.download=name;a.click();
  setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
+$('export-dxf').addEventListener('click',()=>{
+ download('qixu-wall-plan.dxf','application/dxf',exportDxf(doc));
+ notify('已导出 CAD R12 ASCII LINE 墙线 DXF');
+});
+$('export-bom').addEventListener('click',()=>{
+ const takeoff=materialTakeoff(doc);
+ const rows=[['类型','名称','数量','单位','说明'],
+ ['地面','已闭合房间面积',takeoff.totalFloorAreaM2,'㎡','仅已闭合空间'],
+ ['墙体','墙段总长',takeoff.wallLengthM,'m','不剔除重复重叠墙线'],
+ ['墙体','墙面净面积',takeoff.netWallAreaM2,'㎡','单面墙面面积，扣除门窗开孔'],
+ ['开口','门窗面积',takeoff.openingAreaM2,'㎡','估算值']];
+ for(const [type,n]of Object.entries(takeoff.furnitureCounts))
+   rows.push(['家具',FURNITURE[type]?.label||type,n,'件','仅数量，无单价']);
+ const csv='\uFEFF'+rows.map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');
+ download('qixu-material-takeoff.csv','text/csv;charset=utf-8',csv);
+ notify('已导出估算工程量 CSV，不包含施工损耗及报价');
+});
+$('smart-layout').addEventListener('click',()=>{
+ const suggestions=suggestLayout(doc);
+ if(!suggestions.length){notify('未找到可以安全摆放家具的闭合空间。请检查墙体连接后重试。');return;}
+ change(()=>{
+   for(const s of suggestions){
+     const f=addFurniture(doc,s.type);
+     Object.assign(f,{x:s.x,z:s.z,width:s.width,depth:s.depth,height:s.height,rotation:0});
+   }
+ });notify('已按房间几何生成 '+suggestions.length+' 件家具的规则布局，可继续手工调整');
+});
 $('export').addEventListener('click',()=>{
  download('qixu-studio.json','application/json',JSON.stringify(doc,null,2));notify('已导出可编辑完整方案');
 });
