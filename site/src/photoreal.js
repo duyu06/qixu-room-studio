@@ -5,7 +5,9 @@ Vector3,OrbitControls,WebGPUPathTracer;
 
 const viewer=document.querySelector('#viewer'),msg=document.querySelector('#overlay'),info=document.querySelector('#info');
 let tracer=null,renderer=null,scene=null,camera=null,controls=null,mode='low',roomGroup=null;
-const saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');
+let saved=null,saveReadError=false;
+try{saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');}
+catch(err){saveReadError=true;console.warn('Invalid saved floorplan',err);}
 function fail(message) {msg.textContent=message;msg.classList.add('failure');info.textContent=message;info.classList.add('failure');}
 function cropImage(src,crop){
   return new Promise((resolve,reject)=>{
@@ -20,7 +22,7 @@ function cropImage(src,crop){
 }
 async function rebuild(){
   if(!saved?.plan)return;
-  if(roomGroup){scene.remove(roomGroup);roomGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.()})}
+  if(roomGroup){scene.remove(roomGroup);roomGroup.traverse(o=>{o.geometry?.dispose();o.material?.map?.dispose?.();o.material?.dispose?.()})}
   const p=saved.plan;roomGroup=new Group();roomGroup.name='renderable-floorplan';scene.add(roomGroup);
   const mat=new MeshStandardMaterial({color:0xfff7ea,roughness:.86,metalness:0});
   const crop=await cropImage(saved.image,p.crop);
@@ -41,6 +43,7 @@ async function rebuild(){
     wall.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
     roomGroup.add(wall);
   }
+  mat.dispose();
   const palette=[0xaf9679,0x8b977d,0xb78d71,0x6e8891,0xa6a8a1];
   for(let i=0;i<(p.furniture||[]).length;i++){
     const f=p.furniture[i],d=f.dims||[.85,.85,.76],g=new BoxGeometry(d[0],d[2],d[1]);
@@ -54,7 +57,10 @@ async function rebuild(){
   msg.textContent='WebGPU 光线追踪正在逐步积累 · 拖动可旋转 · 鼠标滚轮缩放';
 }
 async function init(){
-  if(!saved?.plan?.walls?.length){fail('当前浏览器尚无已保存户型图。请返回编辑器上传户型图，然后再打开这个预览页。');return;}
+  if(saveReadError){fail('本机保存的户型数据已损坏，请返回编辑器重新导入完整项目。此页面不会自动删除旧数据。');return;}
+  if(!saved?.plan?.walls?.length||!saved?.plan?.crop||!saved?.image){
+    fail('当前浏览器尚无已保存户型图，或保存数据无效。请返回编辑器上传户型图，再打开预览。');return;
+  }
   if(!navigator.gpu){fail('当前浏览器没有启用 WebGPU，请使用较新的 Chrome/Edge 和支持 WebGPU 的显卡驱动。主编辑器仍可正常使用。');return;}
   ({Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,Vector3}=await import('three/webgpu'));
   ({OrbitControls}=await import('three/addons/controls/OrbitControls.js'));

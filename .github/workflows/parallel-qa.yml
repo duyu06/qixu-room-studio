@@ -1,0 +1,47 @@
+name: Parallel QA lanes
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-lanes:
+    name: "QA ${{ matrix.lane }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [desktop, mobile, data, science]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0 pngjs@7.0.0
+      - run: npx playwright install --with-deps chromium
+      - name: Run lane
+        run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/qa-parallel.spec.mjs --grep "@${{ matrix.lane }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "qa-${{ matrix.lane }}-evidence"
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+  scientific-contracts:
+    name: Scientific and data contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node tests/ventilation.test.mjs
+          node tests/solar-cfd.test.mjs
+          node tests/scale-calibration.test.mjs
+          node tests/blueprint-project.test.mjs
+          node tests/history-model.test.mjs
