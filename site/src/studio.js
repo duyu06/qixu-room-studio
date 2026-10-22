@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
+import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
@@ -12,7 +13,7 @@ import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
 const selectedTemplate=new URLSearchParams(location.search).get('template');
 const demoInfo=SHOWCASE_TEMPLATES.find(x=>x.slug===selectedTemplate);
-const STORE=demoInfo?'qixu-studio-demo-'+demoInfo.slug+'-v1':'qixu-studio-v1';
+const STORE=projectStorageKey(demoInfo?.slug);
 let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
@@ -599,7 +600,7 @@ if(demoInfo){
  const savePersonal=document.createElement('button');savePersonal.type='button';savePersonal.textContent='另存为我的项目 ↗';
  savePersonal.addEventListener('click',()=>{
    try{
-     const key='qixu-studio-v1';
+     const key=PERSONAL_PROJECT_KEY;
      if(localStorage.getItem(key)&&!confirm('已有个人设计，是否使用当前样板间覆盖它？建议先下载个人设计的 JSON 备份。'))return;
      localStorage.setItem(key,JSON.stringify(doc));location.href='./studio.html';
    }catch(err){notify('另存失败，请使用右上角的「保存项目」下载 JSON。');}

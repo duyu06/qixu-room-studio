@@ -1,4 +1,5 @@
 import {studioToRenderPayload,renderWallPieces} from './studio-render-bridge.js';
+import {demoId,projectStorageKey,LEGACY_PROJECT_KEY} from './qixu-routes.js';
 // Load heavy WebGPU imports after capability checks.
 let Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,
 CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,
@@ -6,13 +7,14 @@ Vector3,OrbitControls,WebGPUPathTracer;
 
 const viewer=document.querySelector('#viewer'),msg=document.querySelector('#overlay'),info=document.querySelector('#info');
 let tracer=null,renderer=null,scene=null,camera=null,controls=null,mode='low',roomGroup=null;
+const activeDemo=demoId(new URLSearchParams(location.search).get('template'));
 let saved=null,saveReadError=false;
 try{
-  const studio=JSON.parse(localStorage.getItem('qixu-studio-v1')||'null');
+  const studio=JSON.parse(localStorage.getItem(projectStorageKey(activeDemo))||'null');
   if(studio?.schema==='qixu-studio')saved=studioToRenderPayload(studio);
 }catch(err){saveReadError=true;console.warn('Invalid saved studio project',err);}
 if(!saved){
-  try{saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');}
+  try{saved=JSON.parse(localStorage.getItem(LEGACY_PROJECT_KEY)||'null');}
   catch(err){saveReadError=true;console.warn('Invalid legacy floorplan',err);}
 }
 function fail(message) {msg.textContent=message;msg.classList.add('failure');info.textContent=message;info.classList.add('failure');}
