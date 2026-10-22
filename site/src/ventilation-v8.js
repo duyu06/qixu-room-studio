@@ -131,7 +131,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
   // Real solar angles come from the MIT/BSD-style SunCalc astronomy implementation,
   // calculated for the user's chosen date, coordinates and timezone.
   async function loadSun() {
-    try{sunCalc=await import('https://cdn.jsdelivr.net/npm/suncalc@2.1.1/+esm');updateSolar();}
+    try{sunCalc=await import('../vendor/suncalc.js');updateSolar();}
     catch(e){sunLabel.textContent='太阳位置库无法加载；日照计算已禁用。请检查 CDN 网络。';console.warn(e);}
   }
   let solarLight=null;
