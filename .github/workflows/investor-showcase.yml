@@ -1,0 +1,31 @@
+name: Investor showcase browser acceptance
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  showcase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate demo scenes
+        run: node tests/showcase-templates.test.mjs
+      - name: Install browser tests
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - name: Test homepage, interactive demo and saved-project isolation
+        run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/investor-showcase.spec.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: showcase-qa-screenshots
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

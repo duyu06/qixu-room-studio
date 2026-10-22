@@ -1,13 +1,19 @@
 import * as THREE from 'three';
+import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
 import {canWalkAt,findWalkStart} from './studio-tour.js';
+import {SHOWCASE_TEMPLATES,makeShowcaseTemplate} from './showcase-templates.js';
 import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall,
   addOpening,wallPieces,length,interpolated,deleteObject,addFurniture,
   importLegacy,clamp,setOpeningDimension} from './studio-model.js';
 
-const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg',STORE='qixu-studio-v1';
+const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg';
+const selectedTemplate=new URLSearchParams(location.search).get('template');
+const demoInfo=SHOWCASE_TEMPLATES.find(x=>x.slug===selectedTemplate);
+const STORE=demoInfo?'qixu-studio-demo-'+demoInfo.slug+'-v1':'qixu-studio-v1';
+let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
@@ -416,7 +422,10 @@ function renderThree(){
   const group=new THREE.Group();group.position.set(wall.a[0],0,wall.a[1]);
   group.rotation.y=-Math.atan2(dz,dx);
   group.userData.selection={kind:'wall',id:wall.id};
-  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.89});
+  const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
+  const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
+  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.89,
+    transparent:fadeWall,opacity:fadeWall?.2:1,depthWrite:!fadeWall,side:THREE.DoubleSide});
   for(const piece of wallPieces(doc,wall)){
    buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,doc.thickness,
      (piece.start+piece.end)/2,(piece.top+piece.bottom)/2,0);
@@ -442,25 +451,15 @@ function renderThree(){
  }
  for(const item of doc.furniture){
   const group=new THREE.Group();
-  group.position.set(item.x,0,item.z);group.rotation.y=-item.rotation;
+  group.position.set(item.x,0,item.z);
+  group.rotation.y=-item.rotation;
   group.userData.selection={kind:'furniture',id:item.id};
-  const mainMat=new THREE.MeshStandardMaterial({color:FURNITURE[item.type].color,roughness:.78});
-  buildBox(group,mainMat,item.width,item.height,item.depth,0,item.height/2+.03,0);
-  if(item.type==='bed'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#f2efe6'}),
-      item.width*.72,.12,.4,0,item.height+.05,-item.depth*.28);
-  }else if(item.type==='sofa'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#66867c'}),
-      item.width,.43,.19,0,item.height+.20,-item.depth*.37);
-  }else if(item.type==='table'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#e1c8a4'}),
-      item.width+.04,.07,item.depth+.04,0,item.height+.05,0);
-  }
+  group.add(createProceduralFurniture(item));
   content.add(group);
  }
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
- grid.position.y=.014;content.add(grid);
+ grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
 }
 function initThree(){
  if(ready)return;
@@ -470,12 +469,12 @@ function initThree(){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.8));
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.5;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=demoInfo?1.18:1.5;
  $('three-viewport').append(renderer.domElement);
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
  orbit.minDistance=2;orbit.maxDistance=130;orbit.maxPolarAngle=Math.PI*.49;
- scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,2.2));
- const sun=new THREE.DirectionalLight(0xffeed4,2.9);
+ scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,demoInfo?1.6:2.2));
+ const sun=new THREE.DirectionalLight(0xffeed4,demoInfo?2.25:2.9);
  sun.position.set(-13,22,-18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
  sun.shadow.camera.left=-35;sun.shadow.camera.right=35;
  sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;
@@ -578,5 +577,35 @@ function setView(name){
 try{
  const old=JSON.parse(localStorage.getItem(STORE)||'null');
  if(old&&!validateProject(old))doc=old;
-}catch(err){console.warn('Ignoring corrupted project',err);}
+ else if(demoInfo)doc=makeShowcaseTemplate(demoInfo.slug);
+}catch(err){console.warn('Ignoring corrupted project',err);
+ if(demoInfo)doc=makeShowcaseTemplate(demoInfo.slug);}
 library();refresh();fit();toolMode('select');
+if(demoInfo){
+ const banner=document.createElement('div');banner.className='studio-demo-banner';
+ const copy=document.createElement('div');
+ const tag=document.createElement('strong');tag.textContent='交互式样板间 / '+demoInfo.name;
+ const hint=document.createElement('span');hint.textContent='可以自由移动家具、修改墙门窗。演示进度与个人项目分别保存。';
+ copy.append(tag,hint);
+ const actions=document.createElement('div');
+ const xrayButton=document.createElement('button');xrayButton.type='button';
+ xrayButton.textContent='显示完整墙体';
+ xrayButton.title='透视墙仅用于观看，项目真实几何和门窗开孔保持不变';
+ xrayButton.addEventListener('click',()=>{
+   demoXray=!demoXray;
+   xrayButton.textContent=demoXray?'显示完整墙体':'开启透视墙';
+   if(ready)renderThree();
+ });
+ const savePersonal=document.createElement('button');savePersonal.type='button';savePersonal.textContent='另存为我的项目 ↗';
+ savePersonal.addEventListener('click',()=>{
+   try{
+     const key='qixu-studio-v1';
+     if(localStorage.getItem(key)&&!confirm('已有个人设计，是否使用当前样板间覆盖它？建议先下载个人设计的 JSON 备份。'))return;
+     localStorage.setItem(key,JSON.stringify(doc));location.href='./studio.html';
+   }catch(err){notify('另存失败，请使用右上角的「保存项目」下载 JSON。');}
+ });
+ const collection=document.createElement('a');collection.href='./showcase.html#collection';collection.textContent='返回样板间';
+ actions.append(xrayButton,savePersonal,collection);banner.append(copy,actions);
+ document.querySelector('.workspace').before(banner);
+ if(new URLSearchParams(location.search).get('view')==='3d')setView('3d');
+}

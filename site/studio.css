@@ -19,3 +19,17 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 .wall-handle{cursor:move;r:.14;pointer-events:all}.furniture-rect.collision{stroke:#c94c38;stroke-width:.075;stroke-dasharray:.14,.09;fill:#ead3c5}
 
 #tour-toggle.active{background:#2c7658;border-color:#2c7658;color:white;font-weight:700}
+
+
+/* Investor showcase session is isolated from a visitor's personal project. */
+.studio-demo-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;background:#eef2e9;border-bottom:1px solid #cbdacd;padding:10px 24px;min-height:61px}
+.studio-demo-banner>div:first-child{display:flex;flex-direction:column;gap:5px;min-width:0}
+.studio-demo-banner strong{font-size:12px;color:#305440}
+.studio-demo-banner span{font-size:10px;color:#748778;line-height:1.5}
+.studio-demo-banner>div:last-child{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.studio-demo-banner button,.studio-demo-banner a{padding:8px 12px;border-radius:7px;border:1px solid #b9d2c0;font-size:11px;color:#335a42;background:#fff;cursor:pointer;text-decoration:none}
+.studio-demo-banner button{background:#2f6148;color:#fff;border-color:#2f6148;font-weight:700}
+.studio-demo-banner a:hover{background:#e2ede4}
+@media(max-width:850px){.studio-demo-banner{padding:10px 14px}.studio-demo-banner span{max-width:400px}}
+@media(max-width:580px){.studio-demo-banner{flex-direction:column;align-items:stretch;gap:8px}
+.studio-demo-banner>div:last-child{justify-content:space-between}.studio-demo-banner>div:last-child>*{flex:1;text-align:center}}
