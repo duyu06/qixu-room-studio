@@ -59,7 +59,7 @@ async function rebuild(){
 async function init(){
   if(saveReadError){fail('本机保存的户型数据已损坏，请返回编辑器重新导入完整项目。此页面不会自动删除旧数据。');return;}
   if(!saved?.plan?.walls?.length||!saved?.plan?.crop||!saved?.image){
-    fail('当前浏览器尚无有效的已保存户型图。请返回编辑器上传户型图，再打开预览。');return;
+    fail('当前浏览器尚无已保存户型图，或保存数据无效。请返回编辑器上传户型图，再打开预览。');return;
   }
   if(!navigator.gpu){fail('当前浏览器没有启用 WebGPU，请使用较新的 Chrome/Edge 和支持 WebGPU 的显卡驱动。主编辑器仍可正常使用。');return;}
   ({Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,Vector3}=await import('three/webgpu'));
