@@ -1,0 +1,30 @@
+name: Professional floor-plan P2 acceptance
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pro-designer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node tests/studio-geometry.test.mjs
+          node tests/studio-dxf.test.mjs
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/studio-p2.spec.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: studio-p2-regressions
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 10

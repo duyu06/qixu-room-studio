@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createProject,addFurniture} from '../site/src/studio-model.js';
+import {canWalkAt,findWalkStart} from '../site/src/studio-tour.js';
+const doc=createProject();
+const start=findWalkStart(doc);
+assert.ok(start,'Room must contain at least one walkable point');
+assert.ok(canWalkAt(doc,...start));
+assert.equal(canWalkAt(doc,doc.width,0),false);
+const partition=doc.walls[4],L=Math.hypot(partition.b[0]-partition.a[0],partition.b[1]-partition.a[1]);
+const opening=doc.openings.find(o=>o.wallId===partition.id);
+const doorZ=partition.a[1]+(partition.b[1]-partition.a[1])*opening.t;
+assert.ok(canWalkAt(doc,partition.a[0],doorZ),'Open floor-level door must allow walking across');
+assert.ok(!canWalkAt(doc,partition.a[0],-2.5),'Solid partition is impassable');
+const item=addFurniture(doc,'cabinet');
+item.x=2;item.z=0;
+assert.ok(!canWalkAt(doc,item.x,item.z),'Furniture cannot be walked through');
+console.log('Door passage and collision-constrained first-person walkthrough validated');
