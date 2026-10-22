@@ -17,3 +17,16 @@
 .qx-hub-links a:hover,.qx-hub-links a[aria-current="page"]{background:#edf5ee;color:#28553d}
 .qx-hub-links a[aria-current="page"]{font-weight:750}
 @media(max-width:700px){.qx-brand img{width:108px}.qx-hub-menu summary{padding:8px 9px;font-size:11px}}
+
+
+/* Keep primary Save and module switch usable on narrow phones. */
+@media(max-width:580px){
+ .topbar{gap:7px;padding-inline:8px}
+ .topbar .project-name{display:none}
+ .topbar .top-actions{gap:4px;margin-left:auto}
+ .topbar #snapshot{display:none}
+ .topbar .qx-brand img{width:110px}
+ .site-header .header-center{display:none}
+ .site-header .header-actions{gap:5px}
+ .site-header .save-indicator{display:none}
+}
