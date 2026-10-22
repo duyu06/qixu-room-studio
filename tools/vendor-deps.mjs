@@ -20,7 +20,7 @@ await build({
   legalComments:'eof'
 });
 await build({
-  entryPoints:['node_modules/suncalc/suncalc.js'],bundle:true,platform:'browser',
+  entryPoints:['suncalc'],bundle:true,platform:'browser',
   format:'esm',target:'es2022',outfile:join(dest,'suncalc.js'),minify:true,
   legalComments:'eof'
 });
