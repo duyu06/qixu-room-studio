@@ -162,7 +162,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   renderer.domElement.addEventListener('pointerdown',e=>{
     if(!plan||e.button!==0)return;
     if(physics.isMarking()){
-      if(fromPointer(e))physics.place(hit.x,hit.z);
+      if(fromPointer(e)){physics.place(hit.x,hit.z);persist();}
       e.preventDefault();e.stopImmediatePropagation();return;
     }
     if(!editing){
