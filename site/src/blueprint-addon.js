@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {validateFloorplanFile,DECODE_LIMIT_PIXELS,recognizeKnownK4,makePreviewLuma} from './image-integrity.js';
+import {makeBlueprintPacket,validateBlueprintPacket,MAX_PROJECT_FILE_BYTES} from './blueprint-project.js';
 import { createVentilationStudio } from './ventilation-v8.js';
 import { createAtmosphere } from './atmosphere-v7.js';
 /* V6: turn raster floor plans into schematic, editable 3D walls.
@@ -98,19 +100,33 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     }
     return runs.filter((r,i)=>!runs.slice(0,i).some(q=>Math.abs(r[0]-q[0])<5&&Math.abs(r[1]-q[1])<5&&Math.abs(r[2]-q[2])<5&&Math.abs(r[3]-q[3])<5)).slice(0,85);
   }
-  const persist=()=>{try{localStorage.setItem('qixu-blueprint-v6',JSON.stringify({plan,image:bitmap.toDataURL('image/jpeg',.7)}))}catch{}};
+  const persist=()=>{
+    if(!bitmap||!plan)return false;
+    try{
+      localStorage.setItem('qixu-blueprint-v6',JSON.stringify({plan,image:bitmap.toDataURL('image/jpeg',.72)}));
+      return true;
+    }catch(err){
+      planStatus.textContent='浏览器存储空间不足，方案尚未自动保存。请缩小图片或清理旧方案后重试。';
+      console.warn('Floorplan autosave failed',err);
+      return false;
+    }
+  };
   function activate(source,fromRestore=false){
     const img=new Image();img.onload=()=>{
+      if(img.width<128||img.height<128||img.width*img.height>DECODE_LIMIT_PIXELS){
+        planStatus.textContent='图片像素过小或过大（最多 3600 万像素）；已保留之前的设计。';
+        return;
+      }
       bitmap=document.createElement('canvas');
       const scale=Math.min(1,900/Math.max(img.width,img.height));
       bitmap.width=Math.round(img.width*scale);bitmap.height=Math.round(img.height*scale);
       const ctx=bitmap.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,bitmap.width,bitmap.height);
       if(!fromRestore){
-        const ref=img.width===474&&img.height===514;
+        const ref=recognizeKnownK4(img.width,img.height,makePreviewLuma(bitmap));
         const crop=ref?sampleBox:{left:Math.round(bitmap.width*.04),top:Math.round(bitmap.height*.04),right:Math.round(bitmap.width*.96),bottom:Math.round(bitmap.height*.96)};
         plan={w:ref?11.2:9.6,d:ref?13.08:9.6*bitmap.height/bitmap.width,crop,
           walls:ref?sample.map(a=>a.slice()):genericWalls(ctx,bitmap.width,bitmap.height),furniture:[],
-          note:ref?'K-4 参考图：人工校对的示意墙线':'自动提线初稿：请人工核对墙体与门洞'};
+          note:ref?'K-4 已知示例匹配：示意墙线仍需人工校准':'实验性自动提线初稿：未完成房型识别，请人工确认墙体/门洞'};
         if(!plan.walls.length)plan.walls=[[crop.left,crop.top,crop.right,crop.top],[crop.right,crop.top,crop.right,crop.bottom],[crop.right,crop.bottom,crop.left,crop.bottom],[crop.left,crop.bottom,crop.left,crop.top]];
       }
       $('analysis-card').hidden=false;$('analysis-card').querySelector('b').textContent='户型图已转换为立体墙线';
@@ -118,7 +134,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       $('photo-preview').hidden=false;$('photo-preview').style.backgroundImage='url('+bitmap.toDataURL('image/jpeg',.65)+')';
       $('upload-main').textContent='更换户型图';
       renderPlan();persist();
-    };img.src=source;
+    };img.onerror=()=>{planStatus.textContent='图片无法解码，原方案保持不变。';};img.src=source;
   }
 
   library.addEventListener('click',e=>{
@@ -137,16 +153,76 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     renderPlan(false);persist();
     planStatus.textContent='已添加 '+label+'，请在 3D 场景中拖动以改变位置。';
   },true);
+  const uploadImage=(f)=>{
+    const err=validateFloorplanFile(f);
+    if(err){planStatus.textContent=err;return;}
+    const fr=new FileReader();
+    fr.onerror=()=>{planStatus.textContent='图片读取失败，请重试。'};
+    fr.onload=()=>activate(fr.result);
+    fr.readAsDataURL(f);
+  };
   $('photo-input').addEventListener('change',e=>{
     const f=e.target.files?.[0];if(!f)return;
-    e.stopImmediatePropagation();if(!/^image\/(png|jpeg|webp)$/.test(f.type))return;
-    const fr=new FileReader();fr.onload=()=>activate(fr.result);fr.readAsDataURL(f);
+    e.stopImmediatePropagation();uploadImage(f);
+    e.target.value='';
   },true);
   $('dropzone').addEventListener('drop',e=>{
     const f=e.dataTransfer.files?.[0];if(!f)return;
     e.preventDefault();e.stopImmediatePropagation();
-    const fr=new FileReader();fr.onload=()=>activate(fr.result);fr.readAsDataURL(f);
+    uploadImage(f);
   },true);
+  // Complete editable blueprint export, unlike the legacy demo-only JSON project.
+  const projectActions=document.createElement('div');
+  projectActions.className='qixu-project-actions';
+  const exportBtn=document.createElement('button');
+  exportBtn.type='button';exportBtn.textContent='下载完整户型项目 JSON';
+  const importBtn=document.createElement('button');
+  importBtn.type='button';importBtn.textContent='导入完整户型项目';
+  const projectInput=document.createElement('input');
+  projectInput.type='file';projectInput.accept='.json,application/json';projectInput.hidden=true;
+  projectActions.append(exportBtn,importBtn,projectInput);
+  pane.append(projectActions);
+  const exportBlueprint=()=>{
+    if(!plan||!bitmap){planStatus.textContent='请先上传或导入户型图。';return;}
+    try{
+      const packet=makeBlueprintPacket(plan,bitmap.toDataURL('image/jpeg',.76));
+      const blob=new Blob([JSON.stringify(packet)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='qixu-blueprint-full.json';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),3000);
+      planStatus.textContent='已导出完整户型项目（含底图、墙线、家具、风口位置）；妥善保管，勿公开上传私人户型。';
+    }catch(err){planStatus.textContent='导出失败：'+err.message;}
+  };
+  exportBtn.addEventListener('click',exportBlueprint);
+  importBtn.addEventListener('click',()=>projectInput.click());
+  projectInput.addEventListener('change',async e=>{
+    const file=e.target.files?.[0];e.target.value='';
+    if(!file)return;
+    if(file.size>MAX_PROJECT_FILE_BYTES){planStatus.textContent='项目文件超过 18 MB，已拒绝导入。';return;}
+    try{
+      const packet=JSON.parse(await file.text());
+      const error=validateBlueprintPacket(packet);
+      if(error){planStatus.textContent='导入失败：'+error;return;}
+      plan=structuredClone(packet.plan);
+      activate(packet.image,true);
+    }catch(err){planStatus.textContent='无法读取项目：'+err.message;}
+  });
+  $('export-project')?.addEventListener('click',e=>{
+    if(!plan)return;
+    e.preventDefault();e.stopImmediatePropagation();exportBlueprint();
+  },true);
+  const privacy=document.createElement('button');
+  privacy.type='button';privacy.className='qixu-clear-data';
+  privacy.textContent='删除本机保存的户型与图片';
+  privacy.addEventListener('click',()=>{
+    if(!confirm('确定删除此浏览器保存的户型图、家具和设计进度？删除后无法恢复。'))return;
+    try{
+      localStorage.removeItem('qixu-blueprint-v6');
+      localStorage.removeItem('qixu-space-studio-v4.autosave');
+    }catch(err){console.warn('Could not clear local data',err);}
+    window.location.reload();
+  });
+  pane.append(privacy);
   pane.querySelector('#plan-edit').addEventListener('click',()=>{
     editing=!editing;first=null;pane.querySelector('#plan-edit').textContent=editing?'结束绘墙':'补画墙体';
     if(editing){$('view-buttons').querySelector('[data-view=top]').click();}

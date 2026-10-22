@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {validateFloorplanFile,recognizeKnownK4,IMAGE_LIMIT_BYTES,DECODE_LIMIT_PIXELS} from '../site/src/image-integrity.js';
+const source=[255,255,247,239,242,250,251,245,239,249,254,251,255,242,164,144,136,150,157,142,149,185,250,251,255,237,163,135,105,122,134,114,147,180,255,251,252,211,126,121,130,137,141,135,116,156,232,251,247,182,154,154,181,167,163,176,164,202,209,254,245,167,126,132,181,170,167,182,190,217,221,255,249,184,103,99,162,186,195,191,175,215,200,254,255,239,147,103,145,173,186,169,161,204,199,255,255,236,125,119,112,156,167,145,155,215,202,255,255,235,123,160,98,151,170,141,153,222,204,254,255,241,150,147,134,157,162,151,176,247,240,252,249,250,243,236,236,213,202,195,216,246,246,243];
+assert.ok(recognizeKnownK4(474,514,source));
+assert.ok(!recognizeKnownK4(474,514,new Array(144).fill(245)),'Same dimensions must never be enough for reference matching');
+assert.ok(!recognizeKnownK4(200,300,source));
+assert.ok(recognizeKnownK4(474,514,source.map(x=>x+2)));
+assert.equal(DECODE_LIMIT_PIXELS,36000000);
+assert.equal(validateFloorplanFile({size:1024,type:'image/png'}),null);
+assert.ok(validateFloorplanFile({size:IMAGE_LIMIT_BYTES+1,type:'image/png'}));
+assert.ok(validateFloorplanFile({size:1024,type:'application/pdf'}));
+assert.ok(validateFloorplanFile({size:0,type:'image/png'}));
+console.log('Known reference recognition and safe file constraints passed');

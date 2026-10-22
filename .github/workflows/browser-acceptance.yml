@@ -1,0 +1,30 @@
+name: Browser acceptance (Loop P0)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned test runner
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - name: Install Chromium for browser acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Run browser acceptance suite
+        run: npx playwright test --config=tests/browser/playwright.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
