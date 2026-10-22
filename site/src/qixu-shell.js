@@ -15,7 +15,7 @@ for(const brand of document.querySelectorAll('[data-qixu-brand]')){
 for(const slot of document.querySelectorAll('[data-qixu-nav]')){
  const menu=document.createElement('details');menu.className='qx-hub-menu';
  const summary=document.createElement('summary');
- summary.textContent='切换模块';summary.setAttribute('aria-label','切换栖序功能模块');
+ summary.textContent='设计工作台';summary.setAttribute('aria-label','打开栖序设计工作台');
  const list=document.createElement('nav');list.className='qx-hub-links';
  list.setAttribute('aria-label','栖序产品功能导航');
  for(const entry of PAGES){
