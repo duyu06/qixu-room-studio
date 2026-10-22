@@ -1,8 +1,7 @@
-import { Scene, Color, PerspectiveCamera, BoxGeometry, PlaneGeometry, Mesh,
-  MeshStandardMaterial, CanvasTexture, SRGBColorSpace, RectAreaLight,
-  ACESFilmicToneMapping, WebGPURenderer, Vector3 } from 'three/webgpu';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { WebGPUPathTracer } from 'three-gpu-pathtracer/webgpu';
+// Load heavy WebGPU imports after capability checks.
+let Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,
+CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,
+Vector3,OrbitControls,WebGPUPathTracer;
 
 const viewer=document.querySelector('#viewer'),msg=document.querySelector('#overlay'),info=document.querySelector('#info');
 let tracer=null,renderer=null,scene=null,camera=null,controls=null,mode='low',roomGroup=null;
@@ -22,7 +21,7 @@ function cropImage(src,crop){
 async function rebuild(){
   if(!saved?.plan)return;
   if(roomGroup){scene.remove(roomGroup);roomGroup.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.()})}
-  const p=saved.plan;roomGroup=new Scene();roomGroup.name='renderable-floorplan';scene.add(roomGroup);
+  const p=saved.plan;roomGroup=new Group();roomGroup.name='renderable-floorplan';scene.add(roomGroup);
   const mat=new MeshStandardMaterial({color:0xfff7ea,roughness:.86,metalness:0});
   const crop=await cropImage(saved.image,p.crop);
   const texture=new CanvasTexture(crop);texture.colorSpace=SRGBColorSpace;
@@ -57,6 +56,9 @@ async function rebuild(){
 async function init(){
   if(!saved?.plan?.walls?.length){fail('当前浏览器尚无已保存户型图。请返回编辑器上传户型图，然后再打开这个预览页。');return;}
   if(!navigator.gpu){fail('当前浏览器没有启用 WebGPU，请使用较新的 Chrome/Edge 和支持 WebGPU 的显卡驱动。主编辑器仍可正常使用。');return;}
+  ({Scene,Group,Color,PerspectiveCamera,BoxGeometry,PlaneGeometry,Mesh,MeshStandardMaterial,CanvasTexture,SRGBColorSpace,RectAreaLight,ACESFilmicToneMapping,WebGPURenderer,Vector3}=await import('three/webgpu'));
+  ({OrbitControls}=await import('three/addons/controls/OrbitControls.js'));
+  ({WebGPUPathTracer}=await import('three-gpu-pathtracer/webgpu'));
   renderer=new WebGPURenderer({antialias:false});
   await renderer.init();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.4));
