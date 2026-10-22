@@ -26,3 +26,4 @@ jobs:
           node tests/release-gate.test.mjs
           node tests/blueprint-project.test.mjs
           node tests/scale-calibration.test.mjs
+          node tests/studio-model.test.mjs
