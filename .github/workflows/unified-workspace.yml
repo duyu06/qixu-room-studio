@@ -1,0 +1,19 @@
+name: Unified one-page studio acceptance
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  studio-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/unified-workspace.spec.mjs

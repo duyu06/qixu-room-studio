@@ -1,0 +1,13 @@
+
+/* One-canvas, multi-tool design workbench. */
+.workspace-caption{font-size:11px;color:#718274;white-space:nowrap}
+#integrated-preview{position:absolute;inset:0;background:#faf9f5;z-index:4}
+#integrated-preview[hidden]{display:none!important}
+#integrated-preview iframe{width:100%;height:100%;display:block;border:0;background:#f8f6f0}
+.unified-analysis-result{font-size:12px;color:#486050}
+.insight-grid{display:grid;grid-template-columns:1fr;gap:9px}
+.insight-grid>div{padding:11px 13px;border:1px solid #e4eae3;border-radius:9px;background:#fcfdfb}
+.insight-grid dt{color:#859587;font-size:10px;margin-bottom:5px}
+.insight-grid dd{font-size:17px;font-weight:650;margin:0;color:#315744;font-variant-numeric:tabular-nums}
+.insight-note{font-size:11px;line-height:1.8;margin:14px 0;color:#718476}
+@media(max-width:850px){.workspace-caption{display:none}}
