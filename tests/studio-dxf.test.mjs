@@ -17,6 +17,6 @@ assert.equal(restored.units,'m');
 assert.equal(restored.project.walls.length,project.walls.length);
 assert.throws(()=>parseDxf(source.replace('$INSUNITS','$UNKNOWN')),/单位/);
 assert.throws(()=>parseDxf('0\nEOF','m'),/没有找到/);
-const bulge=source.replace("'never'","never").replace('10\\n0\\n20\\n0\\n10\\n5000','10\\n0\\n20\\n0\\n42\\n0.5\\n10\\n5000');
+const bulge=source.replace(['10','0','20','0','10','5000'].join('\n'),['10','0','20','0','42','0.5','10','5000'].join('\n'));
 assert.throws(()=>parseDxf(bulge),/弧形/);
 console.log('DXF import/export meters, unit handling and arc rejection passed');
