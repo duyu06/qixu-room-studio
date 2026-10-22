@@ -22,9 +22,9 @@ jobs:
       - name: Test homepage, interactive demo and saved-project isolation
         run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/investor-showcase.spec.mjs
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: showcase-browser-failures
+          name: showcase-qa-screenshots
           path: |
             test-results/
             playwright-report/

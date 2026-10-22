@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 
-test('Investor showcase: authentic plan cards and working walkthrough entry',async({page})=>{
+test('Investor showcase: authentic plan cards and working walkthrough entry',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/showcase.html');
  await expect(page).toHaveTitle(/栖序/);
@@ -15,10 +15,11 @@ test('Investor showcase: authentic plan cards and working walkthrough entry',asy
  const card=page.locator('.project').first();
  await expect(card.locator('svg line')).not.toHaveCount(0);
  await expect(card.locator('.project-action')).toHaveAttribute('href',/template=sunlit/);
+ await testInfo.attach('showcase-desktop.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  expect(errors).toEqual([]);
 });
 
-test('Demo click opens furnished 3D while keeping private project separate',async({page})=>{
+test('Demo click opens furnished 3D while keeping private project separate',async({page},testInfo)=>{
  await page.goto('/studio.html');
  const old=await page.evaluate(()=>localStorage.getItem('qixu-studio-v1'));
  expect(old).not.toBeNull();
@@ -27,6 +28,7 @@ test('Demo click opens furnished 3D while keeping private project separate',asyn
  await expect(page).toHaveURL(/studio\.html\?template=sunlit&view=3d/);
  await expect(page.locator('.studio-demo-banner')).toContainText('日光都市公寓');
  await expect(page.locator('#three-viewport canvas')).toBeVisible({timeout:25000});
+ await testInfo.attach('demo-3d.png',{body:await page.locator('#three-viewport').screenshot(),contentType:'image/png'});
  await expect(page.locator('[data-furniture-id]')).toHaveCount(8);
  const current=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
  expect(current.title).toContain('日光都市公寓');
@@ -49,7 +51,7 @@ test('Saving template as personal project requires explicit confirmation',async(
  expect(project.title).toContain('木色小家');
 });
 
-test('Showcase is mobile-responsive and needs no external runtime',async({page})=>{
+test('Showcase is mobile-responsive and needs no external runtime',async({page},testInfo)=>{
  await page.setViewportSize({width:390,height:844});
  const external=[];
  await page.route('**/*',route=>{
@@ -62,5 +64,6 @@ test('Showcase is mobile-responsive and needs no external runtime',async({page})
  await expect(page.locator('#hero-plan svg')).toBeVisible();
  const measures=await page.evaluate(()=>({screen:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
  expect(measures.scroll,JSON.stringify(measures)).toBeLessThanOrEqual(measures.screen+2);
+ await testInfo.attach('showcase-mobile.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  expect(external).toEqual([]);
 });
