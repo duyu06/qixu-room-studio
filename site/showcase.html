@@ -7,12 +7,15 @@
 <title>栖序 Qixu · 从户型到生活空间</title>
 <link rel="stylesheet" href="./showcase.css">
 <script type="module" src="./src/showcase.js"></script>
+<link rel="icon" type="image/png" href="./assets/qixu-logo-mark.png">
+<link rel="stylesheet" href="./qixu-brand.css">
+<script type="module" src="./src/qixu-shell.js"></script>
 </head>
 <body>
 <header class="nav">
- <a class="brand" href="./showcase.html"><span class="brand-glyph">序</span><span>栖序 <small>QIXU STUDIO</small></span></a>
+ <a class="brand qx-brand" data-qixu-brand href="./showcase.html" aria-label="栖序 QIXU 产品首页"></a>
  <nav class="nav-links" aria-label="页面导航"><a href="#collection">设计案例</a><a href="#workflow">工作方式</a><a href="#progress">产品现状</a></nav>
- <a class="nav-cta" href="./studio.html">进入设计器 <span>↗</span></a>
+ <span class="qx-nav-slot" data-qixu-nav></span><a class="nav-cta" href="./studio.html">进入设计器 <span>↗</span></a>
 </header>
 <main>
  <section class="hero" aria-label="产品介绍">
@@ -75,7 +78,7 @@
   <div class="disclosure">产品处于早期演示阶段。部分家具采用参数化简化模型，光照和气流计算不代表经过现场验证的工程分析；不展示未经证实的商业数据。</div>
  </section>
 </main>
-<footer><a class="brand" href="./showcase.html"><span class="brand-glyph">序</span><span>栖序 <small>QIXU STUDIO</small></span></a>
+<footer><a class="brand qx-brand" data-qixu-brand href="./showcase.html" aria-label="栖序 QIXU 产品首页"></a>
  <span>让设计更自由，让空间更真实。</span><div><a href="./studio.html">进入工作台 ↗</a><a href="./index.html">空间分析实验室 ↗</a><a href="https://github.com/duyu06/qixu-room-studio" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
 </footer>
 </body></html>

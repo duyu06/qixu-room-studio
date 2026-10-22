@@ -1,0 +1,42 @@
+/* Official user-provided QIXU lockup shared by all pages. */
+.qx-brand{display:inline-flex;align-items:center;justify-content:flex-start;flex-shrink:0;
+  line-height:1;min-width:unset;text-decoration:none;color:inherit}
+.qx-brand img{display:block;width:138px;height:auto;max-width:100%;object-fit:contain}
+.qx-nav-slot{position:relative;display:inline-flex;align-items:center;z-index:80;flex-shrink:0}
+.qx-hub-menu{position:relative;color:#476050;font:500 12px/1.3 system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.qx-hub-menu summary{list-style:none;cursor:pointer;white-space:nowrap;padding:9px 12px;
+  border:1px solid #d6dfd5;border-radius:8px;background:#fff}
+.qx-hub-menu summary::-webkit-details-marker{display:none}
+.qx-hub-menu summary:after{content:"⌄";padding-left:9px;color:#7d8b80}
+.qx-hub-menu[open] summary{background:#ecf3ec;border-color:#a8c2ad}
+.qx-hub-links{position:absolute;right:0;top:calc(100% + 7px);min-width:153px;display:flex;
+  flex-direction:column;gap:2px;background:#fff;padding:7px;border:1px solid #dce5db;
+  box-shadow:0 16px 36px #1f3b2b1e;border-radius:11px;z-index:99}
+.qx-hub-links a{font-size:12px;display:block;padding:10px 12px;text-decoration:none;
+ color:#52695a;white-space:nowrap;border-radius:7px}
+.qx-hub-links a:hover,.qx-hub-links a[aria-current="page"]{background:#edf5ee;color:#28553d}
+.qx-hub-links a[aria-current="page"]{font-weight:750}
+@media(max-width:700px){.qx-brand img{width:108px}.qx-hub-menu summary{padding:8px 9px;font-size:11px}}
+
+
+/* Keep primary Save and module switch usable on narrow phones. */
+@media(max-width:580px){
+ .topbar{gap:7px;padding-inline:8px}
+ .topbar .project-name{display:none}
+ .topbar .top-actions{gap:4px;margin-left:auto}
+ .topbar #snapshot{display:none}
+ .topbar .qx-brand img{width:110px}
+ .site-header .header-center{display:none}
+ .site-header .header-actions{gap:5px}
+ .site-header .save-indicator{display:none}
+}
+
+@media(max-width:580px){
+ /* Feature switcher already replaces duplicate showcase/studio quick links. */
+ .site-header .header-actions>a.btn{display:none}
+ .site-header{gap:6px;padding-inline:7px}
+ .site-header .header-actions{gap:3px;min-width:0}
+ .site-header .header-actions .btn{font-size:9px;padding:7px 6px}
+ .site-header .qx-brand img{width:99px}
+ .site-header .qx-hub-menu summary{padding:7px 7px}
+}

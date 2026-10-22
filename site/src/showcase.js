@@ -1,4 +1,5 @@
 import {SHOWCASE_TEMPLATES,makeShowcaseTemplate} from './showcase-templates.js';
+import {studioLink} from './qixu-routes.js';
 import {length,interpolated,wallPieces,FURNITURE} from './studio-model.js';
 
 const ns='http://www.w3.org/2000/svg';
@@ -73,7 +74,7 @@ function switchHero(next){
  active=(next+slugs.length)%slugs.length;
  const template=SHOWCASE_TEMPLATES[active],doc=makeShowcaseTemplate(template.slug);
  hero.replaceChildren(drawPlan(doc));heroName.textContent=template.name;
- heroButton.href='./studio.html?template='+encodeURIComponent(template.slug)+'&view=3d';
+ heroButton.href=studioLink(template.slug);
 }
 document.getElementById('hero-prev').addEventListener('click',()=>switchHero(active-1));
 document.getElementById('hero-next').addEventListener('click',()=>switchHero(active+1));
@@ -89,7 +90,7 @@ for(const metadata of SHOWCASE_TEMPLATES){
  const title=document.createElement('h3');title.className='project-title';title.textContent=metadata.name;
  const text=document.createElement('p');text.className='project-desc';text.textContent=metadata.subtitle;
  const action=document.createElement('a');action.className='project-action';
- action.href='./studio.html?template='+encodeURIComponent(metadata.slug)+'&view=3d';
+ action.href=studioLink(metadata.slug);
  action.append(document.createTextNode('打开可编辑样板间'),Object.assign(document.createElement('span'),{textContent:'↗'}));
  details.append(n,title,text,action);card.append(art,details);gallery.append(card);
 }

@@ -11,18 +11,21 @@
   "three/addons/":"./vendor/three/addons/"
 }}</script>
 <script type="module" src="./src/studio.js"></script>
+<link rel="icon" type="image/png" href="./assets/qixu-logo-mark.png">
+<link rel="stylesheet" href="./qixu-brand.css">
+<script type="module" src="./src/qixu-shell.js"></script>
 </head>
 <body>
 <div id="app">
  <header class="topbar">
-  <a href="./index.html" class="logo" title="返回旧版实验室"><span class="logo-symbol">序</span><span>栖序 <small>STUDIO</small></span></a>
+  <a href="./showcase.html" class="logo qx-brand" data-qixu-brand title="栖序 QIXU 产品首页" aria-label="栖序 QIXU 产品首页"></a>
   <div class="project-name"><span class="crumb">我的工作空间 /</span><input id="project-title" aria-label="项目名称" value="我的第一个空间" maxlength="50"><span class="save" id="save-state">已保存到此浏览器</span></div>
   <div class="top-actions">
    <button id="undo" title="撤销 Ctrl+Z">↶ 撤销</button>
    <button id="redo" title="重做 Ctrl+Shift+Z">↷ 重做</button>
    <span class="separator"></span>
    <button id="export">↓ 保存项目</button><button id="snapshot">▧ 导出视图</button>
-   <a class="legacy-link" href="./index.html">风水与气流分析 ↗</a>
+   <span class="qx-nav-slot" data-qixu-nav></span><a class="legacy-link" href="./index.html">风水与气流分析 ↗</a>
   </div>
  </header>
  <div class="workspace">
@@ -31,7 +34,7 @@
    <button class="rail-tab" data-panel="library"><b>▣</b><span>家具</span></button>
    <button class="rail-tab" data-panel="materials"><b>◧</b><span>材质</span></button>
    <div class="rail-spacer"></div>
-   <a href="./photoreal.html" class="rail-tab" title="实验性 WebGPU 光照预览"><b>☼</b><span>渲染</span></a>
+   <a href="./photoreal.html" data-qixu-render-link class="rail-tab" title="实验性 WebGPU 光照预览"><b>☼</b><span>渲染</span></a>
   </nav>
   <aside class="left" id="left-panel">
    <div class="panel-section" data-sidebar="structure">
