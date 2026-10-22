@@ -56,7 +56,7 @@ export function addWall(doc,a,b){
 export function addOpening(doc,kind,wallId,t,width){
   if(!['door','window'].includes(kind))throw Error('未知开口类型');
   const wall=doc.walls.find(w=>w.id===wallId);if(!wall)throw Error('墙体不存在');
-  const L=length(w),w=Number(width),offset=Number(t)*L;
+  const L=length(wall),w=Number(width),offset=Number(t)*L;
   if(!(w>=.45&&w<L-.24)||offset-w/2<.12||offset+w/2>L-.12)
     throw Error('开口过宽或距离墙角太近');
   const intersects=doc.openings.some(o=>o.wallId===wallId&&
