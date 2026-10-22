@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {validateFloorplanFile,DECODE_LIMIT_PIXELS,recognizeKnownK4,makePreviewLuma} from './image-integrity.js';
 import {makeBlueprintPacket,validateBlueprintPacket,MAX_PROJECT_FILE_BYTES} from './blueprint-project.js';
+import {calibrateFloorplan} from './scale-calibration.js';
 import { createVentilationStudio } from './ventilation-v8.js';
 import { createAtmosphere } from './atmosphere-v7.js';
 /* V6: turn raster floor plans into schematic, editable 3D walls.
@@ -10,6 +11,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   const container=$('viewport');
   const library=$('catalog');
   let overlay=null,plan=null,bitmap=null,editing=false,first=null,objects=[],moving=null;
+  let measuring=false, measurePoints=[];
   const sample=[
     [84,59,394,59],[84,59,84,155],[84,155,162,155],[193,59,193,121],[193,145,193,155],
     [299,59,299,120],[299,146,299,155],[372,59,372,154],[299,155,341,155],
@@ -31,6 +33,37 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   const atmosphere=createAtmosphere({scene,renderer,state,host:pane,onWallModeChange:()=>renderPlan(false)});
   const physics=createVentilationStudio({scene,renderer,state,host:pane,camera,orbit});
   const planStatus=pane.querySelector('#plan-status');
+  const scalePanel=document.createElement('section');
+  scalePanel.className='qixu-scale-panel';
+  scalePanel.innerHTML='<b>实际尺寸标定</b><p class="qixu-scale-note">俯视模式依次点击一段已知实际长度的起点、终点。示例墙体尺寸未经测量，请勿用于施工。</p>'+
+    '<div class="qixu-scale-row"><label for="qixu-known-length">已知长度（米）</label><input id="qixu-known-length" type="number" min="0.1" max="40" step="0.1" value="3" /></div>'+
+    '<div class="qixu-scale-row"><button type="button" id="qixu-measure-start">开始两点标定</button><button type="button" id="qixu-measure-cancel" disabled>取消</button></div>'+
+    '<p id="qixu-scale-result" role="status">尚未用实际尺寸校准</p>';
+  pane.insertBefore(scalePanel, pane.children[2]);
+  const scaleResult=scalePanel.querySelector('#qixu-scale-result');
+  const knownLength=scalePanel.querySelector('#qixu-known-length');
+  const measureStart=scalePanel.querySelector('#qixu-measure-start');
+  const measureCancel=scalePanel.querySelector('#qixu-measure-cancel');
+  const displayCalibration=()=>{
+    if(!plan){scaleResult.textContent='请先导入户型图。';return;}
+    scaleResult.textContent=(plan.calibration?'已使用已知尺寸校准':'估算尺寸 · 尚未校准')+
+      ' · 宽 '+plan.w.toFixed(2)+' 米 × 深 '+plan.d.toFixed(2)+' 米';
+  };
+  function stopMeasure(){
+    measuring=false;measurePoints.length=0;
+    measureStart.disabled=false;measureCancel.disabled=true;
+  }
+  measureStart.addEventListener('click',()=>{
+    if(!plan){scaleResult.textContent='请先上传户型图。';return;}
+    if(!Number.isFinite(knownLength.valueAsNumber)||knownLength.valueAsNumber<.1||knownLength.valueAsNumber>40){
+      scaleResult.textContent='请输入 0.1–40 米的已知长度。';return;
+    }
+    if(editing){editing=false;first=null;pane.querySelector('#plan-edit').textContent='补画墙体';}
+    measuring=true;measurePoints=[];measureStart.disabled=true;measureCancel.disabled=false;
+    const top=$('view-buttons')?.querySelector('[data-view="top"]');top?.click();
+    scaleResult.textContent='点击已知尺寸的第一个端点。';
+  });
+  measureCancel.addEventListener('click',()=>{stopMeasure();displayCalibration();});
   const sampleBox={left:46,top:44,right:421,bottom:482};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pxWorld=(x,y)=>({x:(x-plan.crop.left)/(plan.crop.right-plan.crop.left)*plan.w-plan.w/2,z:(y-plan.crop.top)/(plan.crop.bottom-plan.crop.top)*plan.d-plan.d/2});
@@ -76,7 +109,9 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     // Built-in demo furniture is hidden when importing a distinct plan.
     if(recenter){camera.position.set(plan.w*.75,Math.max(11,plan.d*1.25),plan.d*1.05);
     orbit.target.set(0,0,0);orbit.update();}
-    planStatus.textContent=plan.note+' · '+plan.walls.length+' 段墙体。宽高均为示意比例，非真实测量。';
+    planStatus.textContent=plan.note+' · '+plan.walls.length+' 段墙体。'+
+      (plan.calibration?'已按用户标尺校准整体比例（墙线位置仍需核对）。':'尺寸为示意估算，非真实测量。');
+    displayCalibration();
     atmosphere.onPlan(plan,overlay);
     physics.onPlan(plan);
   }
@@ -112,6 +147,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     }
   };
   function activate(source,fromRestore=false){
+    stopMeasure();
     const img=new Image();img.onload=()=>{
       if(img.width<128||img.height<128||img.width*img.height>DECODE_LIMIT_PIXELS){
         planStatus.textContent='图片像素过小或过大（最多 3600 万像素）；已保留之前的设计。';
@@ -224,7 +260,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   });
   pane.append(privacy);
   pane.querySelector('#plan-edit').addEventListener('click',()=>{
-    editing=!editing;first=null;pane.querySelector('#plan-edit').textContent=editing?'结束绘墙':'补画墙体';
+    stopMeasure();editing=!editing;first=null;pane.querySelector('#plan-edit').textContent=editing?'结束绘墙':'补画墙体';
     if(editing){$('view-buttons').querySelector('[data-view=top]').click();}
   });
   pane.querySelector('#plan-undo').addEventListener('click',()=>{if(!plan?.walls.length)return;plan.walls.pop();renderPlan();persist();});
@@ -237,6 +273,24 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   };
   renderer.domElement.addEventListener('pointerdown',e=>{
     if(!plan||e.button!==0)return;
+    if(measuring){
+      e.preventDefault();e.stopImmediatePropagation();
+      if(!fromPointer(e))return;
+      const c=plan.crop;
+      const x=clamp((hit.x/plan.w+.5)*(c.right-c.left)+c.left,c.left,c.right);
+      const y=clamp((hit.z/plan.d+.5)*(c.bottom-c.top)+c.top,c.top,c.bottom);
+      measurePoints.push([x,y]);
+      if(measurePoints.length===1){
+        scaleResult.textContent='已选起点，请点击第二个端点。';return;
+      }
+      try{
+        if(!plan.ventilation)plan.ventilation=physics.getPorts();
+        plan=calibrateFloorplan(plan,measurePoints[0],measurePoints[1],knownLength.valueAsNumber);
+        stopMeasure();renderPlan(true);persist();
+        scaleResult.textContent='校准成功 · 宽 '+plan.w.toFixed(2)+' 米 × 深 '+plan.d.toFixed(2)+' 米';
+      }catch(err){stopMeasure();scaleResult.textContent='校准失败：'+err.message;}
+      return;
+    }
     if(physics.isMarking()){
       if(fromPointer(e)){physics.place(hit.x,hit.z);persist();}
       e.preventDefault();e.stopImmediatePropagation();return;

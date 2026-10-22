@@ -25,3 +25,4 @@ jobs:
           node tests/image-integrity.test.mjs
           node tests/release-gate.test.mjs
           node tests/blueprint-project.test.mjs
+          node tests/scale-calibration.test.mjs
