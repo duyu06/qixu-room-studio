@@ -73,3 +73,27 @@ test('@science pressure model and local SunCalc update on controls',async({page}
  await page.getByRole('button',{name:'定位进风门'}).click();
  await expect(page.locator('#v8-solver-info')).toContainText('点击门洞中心');
 });
+
+test('@science door placement persists after model recomputation',async({page})=>{
+ await startPlan(page);
+ await page.getByRole('button',{name:'定位进风门'}).click();
+ const canvas=page.locator('#viewport canvas').first();
+ const bounds=await canvas.boundingBox();
+ expect(bounds).toBeTruthy();
+ await canvas.click({position:{x:bounds.width*.51,y:bounds.height*.49}});
+ await expect(page.locator('#v8-solver-info')).toContainText('二维势流场已计算',{timeout:15000});
+ const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-blueprint-v6')));
+ expect(Number.isFinite(stored.plan.ventilation?.door?.x)).toBe(true);
+ expect(Number.isFinite(stored.plan.ventilation?.window?.z)).toBe(true);
+});
+test('@science unsupported WebGPU explains fallback without blank page',async({page})=>{
+ await page.goto('/');
+ await page.evaluate(()=>localStorage.setItem('qixu-blueprint-v6',JSON.stringify({
+   plan:{w:8,d:6,crop:{left:0,top:0,right:500,bottom:500},walls:[[0,0,500,0]],furniture:[]},
+   image:'data:image/png;base64,aGVsbG8='
+ })));
+ await page.addInitScript(()=>Object.defineProperty(navigator,'gpu',{configurable:true,value:undefined}));
+ await page.goto('/photoreal.html');
+ await expect(page.locator('#overlay')).toContainText('没有启用 WebGPU');
+ await expect(page.getByRole('link',{name:/返回实时/})).toBeVisible();
+});
