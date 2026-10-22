@@ -27,8 +27,11 @@ test('Demo click opens furnished 3D while keeping private project separate',asyn
  await page.locator('.project').first().locator('.project-action').click();
  await expect(page).toHaveURL(/studio\.html\?template=sunlit&view=3d/);
  await expect(page.locator('.studio-demo-banner')).toContainText('日光都市公寓');
+ await expect(page.getByRole('button',{name:'显示完整墙体'})).toBeVisible();
  await expect(page.locator('#three-viewport canvas')).toBeVisible({timeout:25000});
  await testInfo.attach('demo-3d.png',{body:await page.locator('#three-viewport').screenshot(),contentType:'image/png'});
+ await page.getByRole('button',{name:'显示完整墙体'}).click();
+ await expect(page.getByRole('button',{name:'开启透视墙'})).toBeVisible();
  await expect(page.locator('[data-furniture-id]')).toHaveCount(8);
  const current=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
  expect(current.title).toContain('日光都市公寓');
