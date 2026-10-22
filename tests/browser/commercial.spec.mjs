@@ -101,3 +101,17 @@ test('measured scale is stored in the complete blueprint project',async ({page})
   expect(json.plan.calibration.measuredByUser).toBe(true);
   expect(json.plan.calibration.distanceMeters).toBe(2);
 });
+
+test('3D editor works without external script access',async ({page})=>{
+  const foreign=[];
+  await page.route('**/*',async route=>{
+    const url=new URL(route.request().url());
+    if(url.origin==='http://127.0.0.1:4173')return route.continue();
+    foreign.push(url.href);
+    return route.abort('blockedbyclient');
+  });
+  await page.goto('/');
+  await expect(page.locator('#viewport canvas')).toBeVisible({timeout:25000});
+  await expect(page.locator('#fatal')).toBeHidden();
+  expect(foreign.filter(x=>/\.js(\?|$)|\/npm\/|\/modules\//.test(x))).toEqual([]);
+});

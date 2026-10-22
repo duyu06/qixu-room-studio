@@ -1,0 +1,36 @@
+name: Build pinned local runtime assets
+on:
+  push:
+    branches: ['goal/p1-selfhost-runtime']
+    paths:
+      - tools/vendor-deps.mjs
+      - tools/pathtracer-entry.js
+      - package.json
+      - .github/workflows/vendor-runtime.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact runtime dependencies
+        run: npm install --no-audit --no-fund
+      - name: Generate self-hosted ESM files
+        run: npm run vendor
+      - name: Record vendored artifacts on feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json site/vendor/
+          if ! git diff --cached --quiet; then
+            git commit -m "build: vendor pinned Three.js, SunCalc and WebGPU assets"
+            git push origin HEAD:goal/p1-selfhost-runtime
+          fi
