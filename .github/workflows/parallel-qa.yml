@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0 pngjs@7.0.0
       - run: npx playwright install --with-deps chromium
       - name: Run lane
         run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/qa-parallel.spec.mjs --grep "@${{ matrix.lane }}"

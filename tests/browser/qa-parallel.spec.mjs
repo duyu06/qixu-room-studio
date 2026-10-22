@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {PNG} from 'pngjs';
 const fixture=async page=>page.evaluate(()=>{
  const c=document.createElement('canvas');c.width=540;c.height=600;
  const g=c.getContext('2d');g.fillStyle='#fff8ed';g.fillRect(0,0,540,600);
@@ -20,6 +21,18 @@ test('@desktop 3D and wall-mode functionality',async({page},testInfo)=>{
  await expect(page.locator('#v7-flow-choices')).toHaveCount(0);
  for(const name of ['真实立面','轻透墙','暖白剖切'])await page.getByRole('button',{name}).click();
  await expect(page.getByRole('button',{name:'暖白剖切'})).toHaveClass(/active/);
+ const raw=await page.locator('#viewport canvas').first().screenshot();
+ const png=PNG.sync.read(raw);
+ const palette=new Set(),lum=[];
+ for(let y=8;y<png.height-8;y+=Math.max(5,Math.floor(png.height/19))){
+   for(let x=8;x<png.width-8;x+=Math.max(5,Math.floor(png.width/19))){
+     const k=(png.width*y+x)*4,r=png.data[k],g=png.data[k+1],b=png.data[k+2];
+     palette.add([r>>4,g>>4,b>>4].join(','));lum.push((r+g+b)/3);
+   }
+ }
+ const lo=Math.min(...lum),hi=Math.max(...lum);
+ expect(palette.size,'3D canvas seems a flat blank color').toBeGreaterThan(8);
+ expect(hi-lo,'3D canvas has no visually distinguishable geometry').toBeGreaterThan(12);
  await testInfo.attach('desktop.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  expect(errors).toEqual([]);
 });
