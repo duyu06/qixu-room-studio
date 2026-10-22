@@ -19,7 +19,17 @@
       }
     }
   </script>
-  <script type="module" src="./src/main.js"></script>
+  <script>
+  // The designer is Qixu's single public entry; keep the historical analysis
+  // lab available at ?legacy=1 for migration and engineering comparisons.
+  if (new URLSearchParams(location.search).get('legacy') !== '1') {
+    const params = new URLSearchParams(location.search);
+    params.delete('legacy');
+    const search = params.toString();
+    location.replace('./studio.html' + (search ? '?' + search : '') + location.hash);
+  }
+</script>
+<script type="module" src="./src/main.js"></script>
 <link rel="icon" type="image/png" href="./assets/qixu-logo-mark.png">
 <link rel="stylesheet" href="./qixu-brand.css">
 <script type="module" src="./src/qixu-shell.js"></script>
