@@ -1,9 +1,8 @@
 // Shared entry points and storage keys. Keep navigation/data routing in one place.
+// The public workflow has one canvas. The legacy lab and standalone previews
+// remain internal implementation pages, not competing customer journeys.
 export const PAGES=Object.freeze([
-  {key:'showcase',label:'产品展示',href:'./showcase.html'},
-  {key:'studio',label:'专业设计',href:'./studio.html'},
-  {key:'analysis',label:'空间分析',href:'./index.html'},
-  {key:'render',label:'光照预览',href:'./photoreal.html'}
+  {key:'studio',label:'空间设计工作台',href:'./studio.html'}
 ]);
 export const PERSONAL_PROJECT_KEY='qixu-studio-v1';
 export const LEGACY_PROJECT_KEY='qixu-blueprint-v6';
