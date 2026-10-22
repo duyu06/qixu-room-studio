@@ -57,3 +57,8 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
  .studio-unified-caption{display:none}
  .rail-tab{min-height:59px;padding:7px 2px}
 }
+
+/* Animate the physically computed streamlines from inlet door toward outlet window. */
+#studio-flow-overlay polyline{stroke-dasharray:.18 .12;animation:qixu-flow 1.65s linear infinite}
+@keyframes qixu-flow{to{stroke-dashoffset:-.30}}
+@media(prefers-reduced-motion:reduce){#studio-flow-overlay polyline{animation:none}}
