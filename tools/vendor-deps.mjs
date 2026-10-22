@@ -13,6 +13,8 @@ for(const name of readdirSync(srcBuild).filter(x=>x.endsWith('.js'))){
   cpSync(join(srcBuild,name),join(dest,'three/build',name));
 }
 cpSync('node_modules/three/examples/jsm/controls/OrbitControls.js',join(dest,'three/addons/controls/OrbitControls.js'));
+mkdirSync(join(dest,'three/addons/geometries'),{recursive:true});
+cpSync('node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js',join(dest,'three/addons/geometries/RoundedBoxGeometry.js'));
 mkdirSync(join(dest,'three/addons/postprocessing'),{recursive:true});
 cpSync('node_modules/three/examples/jsm/postprocessing/Pass.js',join(dest,'three/addons/postprocessing/Pass.js'));
 await build({
