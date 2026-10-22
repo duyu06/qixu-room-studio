@@ -10,7 +10,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   const $=id=>document.getElementById(id);
   const container=$('viewport');
   const library=$('catalog');
-  let overlay=null,plan=null,bitmap=null,editing=false,first=null,objects=[],moving=null;
+  let overlay=null,plan=null,bitmap=null,editing=false,first=null,objects=[],moving=null,loadSequence=0;
   let measuring=false, measurePoints=[];
   const sample=[
     [84,59,394,59],[84,59,84,155],[84,155,162,155],[193,59,193,121],[193,145,193,155],
@@ -68,7 +68,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const pxWorld=(x,y)=>({x:(x-plan.crop.left)/(plan.crop.right-plan.crop.left)*plan.w-plan.w/2,z:(y-plan.crop.top)/(plan.crop.bottom-plan.crop.top)*plan.d-plan.d/2});
   function clear(){
-    if(overlay){scene.remove(overlay);overlay.traverse(o=>{o.geometry?.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose())}});overlay=null;}
+    if(overlay){scene.remove(overlay);overlay.traverse(o=>{o.geometry?.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{m.map?.dispose();m.dispose();})}});overlay=null;}
     objects=[];moving=null;
   }
   function renderPlan(recenter=true){
@@ -146,31 +146,53 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       return false;
     }
   };
-  function activate(source,fromRestore=false){
-    stopMeasure();
-    const img=new Image();img.onload=()=>{
+
+  function activate(source,fromRestore=false,restoredPlan=null){
+    const sequence=++loadSequence;stopMeasure();
+    const img=new Image();
+    img.onload=()=>{
+      if(sequence!==loadSequence)return;
       if(img.width<128||img.height<128||img.width*img.height>DECODE_LIMIT_PIXELS){
-        planStatus.textContent='图片像素过小或过大（最多 3600 万像素）；已保留之前的设计。';
-        return;
+        planStatus.textContent='图片尺寸无效；之前的方案未受影响。';return;
       }
-      bitmap=document.createElement('canvas');
-      const scale=Math.min(1,900/Math.max(img.width,img.height));
-      bitmap.width=Math.round(img.width*scale);bitmap.height=Math.round(img.height*scale);
-      const ctx=bitmap.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,bitmap.width,bitmap.height);
-      if(!fromRestore){
-        const ref=recognizeKnownK4(img.width,img.height,makePreviewLuma(bitmap));
-        const crop=ref?sampleBox:{left:Math.round(bitmap.width*.04),top:Math.round(bitmap.height*.04),right:Math.round(bitmap.width*.96),bottom:Math.round(bitmap.height*.96)};
-        plan={w:ref?11.2:9.6,d:ref?13.08:9.6*bitmap.height/bitmap.width,crop,
-          walls:ref?sample.map(a=>a.slice()):genericWalls(ctx,bitmap.width,bitmap.height),furniture:[],
-          note:ref?'K-4 已知示例匹配：示意墙线仍需人工校准':'实验性自动提线初稿：未完成房型识别，请人工确认墙体/门洞'};
-        if(!plan.walls.length)plan.walls=[[crop.left,crop.top,crop.right,crop.top],[crop.right,crop.top,crop.right,crop.bottom],[crop.right,crop.bottom,crop.left,crop.bottom],[crop.left,crop.bottom,crop.left,crop.top]];
-      }
-      $('analysis-card').hidden=false;$('analysis-card').querySelector('b').textContent='户型图已转换为立体墙线';
-      $('analysis-card').querySelector('.analysis-body').textContent='自动建模是初稿，不等于测量实图；可在俯视图补墙。';
-      $('photo-preview').hidden=false;$('photo-preview').style.backgroundImage='url('+bitmap.toDataURL('image/jpeg',.65)+')';
-      $('upload-main').textContent='更换户型图';
-      renderPlan();persist();
-    };img.onerror=()=>{planStatus.textContent='图片无法解码，原方案保持不变。';};img.src=source;
+      try{
+        const nextBitmap=document.createElement('canvas');
+        const scale=Math.min(1,900/Math.max(img.width,img.height));
+        nextBitmap.width=Math.max(1,Math.round(img.width*scale));
+        nextBitmap.height=Math.max(1,Math.round(img.height*scale));
+        const ctx=nextBitmap.getContext('2d',{willReadFrequently:true});
+        if(!ctx)throw Error('无法创建图片画布');
+        ctx.drawImage(img,0,0,nextBitmap.width,nextBitmap.height);
+        let nextPlan=restoredPlan;
+        if(!fromRestore){
+          const known=recognizeKnownK4(img.width,img.height,makePreviewLuma(nextBitmap));
+          const crop=known?sampleBox:{left:Math.round(nextBitmap.width*.04),top:Math.round(nextBitmap.height*.04),
+            right:Math.round(nextBitmap.width*.96),bottom:Math.round(nextBitmap.height*.96)};
+          nextPlan={w:known?11.2:9.6,d:known?13.08:9.6*nextBitmap.height/nextBitmap.width,
+            crop,walls:known?sample.map(a=>a.slice()):genericWalls(ctx,nextBitmap.width,nextBitmap.height),
+            furniture:[],note:known?'K-4 示意墙线 · 待核对':'自动提线初稿 · 待人工核对'};
+          if(!nextPlan.walls.length)nextPlan.walls=[
+            [crop.left,crop.top,crop.right,crop.top],[crop.right,crop.top,crop.right,crop.bottom],
+            [crop.right,crop.bottom,crop.left,crop.bottom],[crop.left,crop.bottom,crop.left,crop.top]];
+        }
+        if(!nextPlan||!Number.isFinite(nextPlan.w)||!Number.isFinite(nextPlan.d)||
+          nextPlan.w<=0||nextPlan.d<=0||!nextPlan.crop||!Array.isArray(nextPlan.walls))
+          throw Error('户型几何数据无效');
+        // No old project is changed until image decode and geometry checks succeed.
+        bitmap=nextBitmap;plan=nextPlan;
+        $('analysis-card').hidden=false;
+        $('analysis-card').querySelector('b').textContent='户型图已转换为立体墙线';
+        $('analysis-card').querySelector('.analysis-body').textContent='自动建模为示意初稿，需核对墙体与尺寸。';
+        $('photo-preview').hidden=false;
+        $('photo-preview').style.backgroundImage='url('+bitmap.toDataURL('image/jpeg',.65)+')';
+        $('upload-main').textContent='更换户型图';
+        renderPlan();persist();
+      }catch(err){console.warn('Import rejected',err);
+        planStatus.textContent='导入失败：'+err.message+'；之前的方案未受影响。';}
+    };
+    img.onerror=()=>{if(sequence===loadSequence)
+      planStatus.textContent='图片无法解码，之前的方案未受影响。';};
+    img.src=source;
   }
 
   library.addEventListener('click',e=>{
@@ -239,8 +261,7 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
       const packet=JSON.parse(await file.text());
       const error=validateBlueprintPacket(packet);
       if(error){planStatus.textContent='导入失败：'+error;return;}
-      plan=structuredClone(packet.plan);
-      activate(packet.image,true);
+      activate(packet.image,true,structuredClone(packet.plan));
     }catch(err){planStatus.textContent='无法读取项目：'+err.message;}
   });
   $('export-project')?.addEventListener('click',e=>{
@@ -345,6 +366,6 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     requestAnimationFrame(tick);
   };requestAnimationFrame(tick);
   try{const saved=JSON.parse(localStorage.getItem('qixu-blueprint-v6')||'null');
-    if(saved?.plan&&saved?.image&&Array.isArray(saved.plan.walls)){plan=saved.plan;activate(saved.image,true);}
+    if(saved?.plan&&saved?.image&&Array.isArray(saved.plan.walls)){activate(saved.image,true,saved.plan);}
   }catch(e){console.warn('Plan restore skipped',e)}
 }

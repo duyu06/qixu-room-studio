@@ -31,13 +31,11 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     '<div class="v7-choices" id="v7-quick"><button type="button" data-hour="8">晨光</button><button type="button" data-hour="12">正午</button><button type="button" data-hour="17">夕照</button><button type="button" data-hour="20">夜景</button><button type="button" id="v7-autoplay">▶ 演示</button></div>' +
     '<div class="v7-line v7-separate"><label>墙体视觉</label><span class="v7-sub">不改变实际墙线</span></div>' +
     '<div class="v7-choices" id="v7-wall-choices"><button type="button" class="active" data-wall="cutaway">暖白剖切</button><button type="button" data-wall="solid">真实立面</button><button type="button" data-wall="ghost">轻透墙</button></div>' +
-    '<div class="v7-line v7-separate"><label>动态八卦</label><span class="v7-sub" id="v7-flow-label">持续流动</span></div>' +
-    '<div class="v7-choices" id="v7-flow-choices"><button type="button" class="active" data-mode="qi">环绕气韵</button><button type="button" data-mode="wuxing">五行流光</button><button type="button" data-mode="directions">八方汇聚</button></div>' +
-    '<div class="v7-line v7-last"><span id="v7-light-status">暖金日光与柔和阴影</span><label class="v7-switch"><input id="v7-flow-enabled" type="checkbox" checked> 动态</label></div>' +
+    '<p class="v7-flow-explanation">八卦属于传统文化示意。要查看实际模型的相对气流，请使用下方 V8 面板定位进风门、排风窗并重算。</p>' +
+    '<div class="v7-line v7-last"><span id="v7-light-status">光照预览状态</span></div>' +
     '<p class="v7-legal">光斑与流线为可调的视觉模拟；户型图缺少实际窗位、方位和经纬度，不能据此判断真实采光或物理磁场。</p>';
   host.append(panel);
   const hourInput = panel.querySelector('#v7-daytime');
-  const flowToggle = panel.querySelector('#v7-flow-enabled');
   const timeLabel = panel.querySelector('#v7-time-label');
   hourInput.value = state.sunHour;
   hourInput.addEventListener('input', () => {
@@ -64,16 +62,6 @@ export function createAtmosphere({ scene, renderer, state, host, onWallModeChang
     wallMode = b.dataset.wall;
     panel.querySelectorAll('[data-wall]').forEach(n => n.classList.toggle('active', n === b));
     onWallModeChange();
-  });
-  panel.querySelector('#v7-flow-choices').addEventListener('click', e => {
-    const b = e.target.closest('[data-mode]'); if (!b) return;
-    flowMode = b.dataset.mode;
-    panel.querySelectorAll('[data-mode]').forEach(n => n.classList.toggle('active', n === b));
-    panel.querySelector('#v7-flow-label').textContent = '旧版艺术流场（已由 V8 物理模块替代）';
-    recolor();
-  });
-  flowToggle.addEventListener('change', () => {
-    if (field) field.visible = flowToggle.checked;
   });
 
   const sunlightTexture = (() => {

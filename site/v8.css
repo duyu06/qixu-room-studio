@@ -17,3 +17,5 @@
 .qixu-scale-row button{flex:1;padding:9px 5px;border:1px solid #afcdb9;background:#e8f2e9;border-radius:8px;cursor:pointer;color:#315b45;font:inherit;}
 .qixu-scale-row button:disabled{opacity:.45;cursor:not-allowed;}
 #qixu-scale-result{font-size:11px;line-height:1.6;color:#4b755c;margin:9px 0 0;}
+
+.v7-flow-explanation{font-size:11px;line-height:1.65;color:#536e60;padding:9px;background:#ecf5ee;border-radius:8px}
