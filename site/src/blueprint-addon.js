@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {validateFloorplanFile,DECODE_LIMIT_PIXELS,recognizeKnownK4,makePreviewLuma} from './image-integrity.js';
+import {makeBlueprintPacket,validateBlueprintPacket,MAX_PROJECT_FILE_BYTES} from './blueprint-project.js';
 import { createVentilationStudio } from './ventilation-v8.js';
 import { createAtmosphere } from './atmosphere-v7.js';
 /* V6: turn raster floor plans into schematic, editable 3D walls.
@@ -169,6 +170,46 @@ export function attachBlueprint({scene,camera,orbit,renderer,state}) {
     const f=e.dataTransfer.files?.[0];if(!f)return;
     e.preventDefault();e.stopImmediatePropagation();
     uploadImage(f);
+  },true);
+  // Complete editable blueprint export, unlike the legacy demo-only JSON project.
+  const projectActions=document.createElement('div');
+  projectActions.className='qixu-project-actions';
+  const exportBtn=document.createElement('button');
+  exportBtn.type='button';exportBtn.textContent='下载完整户型项目 JSON';
+  const importBtn=document.createElement('button');
+  importBtn.type='button';importBtn.textContent='导入完整户型项目';
+  const projectInput=document.createElement('input');
+  projectInput.type='file';projectInput.accept='.json,application/json';projectInput.hidden=true;
+  projectActions.append(exportBtn,importBtn,projectInput);
+  pane.append(projectActions);
+  const exportBlueprint=()=>{
+    if(!plan||!bitmap){planStatus.textContent='请先上传或导入户型图。';return;}
+    try{
+      const packet=makeBlueprintPacket(plan,bitmap.toDataURL('image/jpeg',.76));
+      const blob=new Blob([JSON.stringify(packet)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='qixu-blueprint-full.json';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),3000);
+      planStatus.textContent='已导出完整户型项目（含底图、墙线、家具、风口位置）；妥善保管，勿公开上传私人户型。';
+    }catch(err){planStatus.textContent='导出失败：'+err.message;}
+  };
+  exportBtn.addEventListener('click',exportBlueprint);
+  importBtn.addEventListener('click',()=>projectInput.click());
+  projectInput.addEventListener('change',async e=>{
+    const file=e.target.files?.[0];e.target.value='';
+    if(!file)return;
+    if(file.size>MAX_PROJECT_FILE_BYTES){planStatus.textContent='项目文件超过 18 MB，已拒绝导入。';return;}
+    try{
+      const packet=JSON.parse(await file.text());
+      const error=validateBlueprintPacket(packet);
+      if(error){planStatus.textContent='导入失败：'+error;return;}
+      plan=structuredClone(packet.plan);
+      activate(packet.image,true);
+    }catch(err){planStatus.textContent='无法读取项目：'+err.message;}
+  });
+  $('export-project')?.addEventListener('click',e=>{
+    if(!plan)return;
+    e.preventDefault();e.stopImmediatePropagation();exportBlueprint();
   },true);
   const privacy=document.createElement('button');
   privacy.type='button';privacy.className='qixu-clear-data';
