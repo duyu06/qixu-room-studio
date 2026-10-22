@@ -11,6 +11,7 @@
   "three/addons/":"./vendor/three/addons/"
 }}</script>
 <script type="module" src="./src/studio.js"></script>
+<script type="module" src="./src/studio-workspace.js"></script>
 <link rel="icon" type="image/png" href="./assets/qixu-logo-mark.png">
 <link rel="stylesheet" href="./qixu-brand.css">
 <script type="module" src="./src/qixu-shell.js"></script>
@@ -25,7 +26,7 @@
    <button id="redo" title="重做 Ctrl+Shift+Z">↷ 重做</button>
    <span class="separator"></span>
    <button id="export">↓ 保存项目</button><button id="snapshot">▧ 导出视图</button>
-   <span class="qx-nav-slot" data-qixu-nav></span><a class="legacy-link" href="./index.html">风水与气流分析 ↗</a>
+   <span class="workspace-caption">一体化空间设计工作台</span>
   </div>
  </header>
  <div class="workspace">
@@ -33,8 +34,9 @@
    <button class="rail-tab active" data-panel="structure"><b>▦</b><span>户型</span></button>
    <button class="rail-tab" data-panel="library"><b>▣</b><span>家具</span></button>
    <button class="rail-tab" data-panel="materials"><b>◧</b><span>材质</span></button>
+   <button class="rail-tab" data-panel="analysis"><b>◉</b><span>分析</span></button>
+   <button class="rail-tab" data-panel="render"><b>☼</b><span>渲染</span></button>
    <div class="rail-spacer"></div>
-   <a href="./photoreal.html" data-qixu-render-link class="rail-tab" title="实验性 WebGPU 光照预览"><b>☼</b><span>渲染</span></a>
   </nav>
   <aside class="left" id="left-panel">
    <div class="panel-section" data-sidebar="structure">
@@ -93,6 +95,21 @@
       <button data-wall-color="#d1c7be" style="--sw:#d1c7be" title="岩灰"></button>
     </div>
    </div>
+   <div class="panel-section" data-sidebar="analysis" hidden>
+    <div class="panel-top"><small>SPACE INSIGHTS</small><h2>空间分析</h2>
+      <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
+    <div id="studio-analysis-result" class="unified-analysis-result" role="status">切换到分析后计算当前空间…</div>
+    <div class="action-grid"><button id="analysis-refresh" type="button">↻ 更新分析</button>
+      <button id="analysis-show-3d" type="button">查看当前 3D</button></div>
+    <p class="hint">通风是二维连通与进出口示意，不是 CFD；采光为几何推断，不是实测照度。风水仅提供传统文化方位参考。</p>
+   </div>
+   <div class="panel-section" data-sidebar="render" hidden>
+    <div class="panel-top"><small>RENDER STUDIO</small><h2>渲染预览</h2>
+      <p>保持当前项目和编辑状态，在主画布内加载 WebGPU 光线追踪。</p></div>
+    <div class="action-grid"><button id="render-refresh" type="button">↻ 更新当前场景</button>
+      <button id="render-return" type="button">返回实时 3D</button></div>
+    <p class="hint">需浏览器支持 WebGPU。渲染页只在本画布中加载，不重新建立另一份项目。</p>
+   </div>
   </aside>
   <main class="center" aria-label="编辑画布">
    <div class="canvas-header">
@@ -111,6 +128,7 @@
       <g id="world"></g><g id="preview-layer"></g>
     </svg>
     <div id="three-viewport" hidden></div>
+    <div id="integrated-preview" hidden><iframe id="integrated-render-frame" title="当前项目 WebGPU 光照预览" loading="lazy"></iframe></div>
     <div class="canvas-help" id="interaction-hint">点选墙体可修改参数；按 W 绘墙，D 添加门，G 添加窗。</div>
     <div class="compass">N <span>↑</span></div>
    </div>
