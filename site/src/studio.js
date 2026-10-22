@@ -459,7 +459,7 @@ function renderThree(){
  }
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
- grid.position.y=.014;content.add(grid);
+ grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
 }
 function initThree(){
  if(ready)return;
@@ -469,12 +469,12 @@ function initThree(){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.8));
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.5;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=demoInfo?1.18:1.5;
  $('three-viewport').append(renderer.domElement);
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
  orbit.minDistance=2;orbit.maxDistance=130;orbit.maxPolarAngle=Math.PI*.49;
- scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,2.2));
- const sun=new THREE.DirectionalLight(0xffeed4,2.9);
+ scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,demoInfo?1.6:2.2));
+ const sun=new THREE.DirectionalLight(0xffeed4,demoInfo?2.25:2.9);
  sun.position.set(-13,22,-18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
  sun.shadow.camera.left=-35;sun.shadow.camera.right=35;
  sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;
