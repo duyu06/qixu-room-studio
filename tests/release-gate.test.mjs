@@ -28,7 +28,7 @@ const v8=fs.readFileSync(path.join(site,'src/ventilation-v8.js'),'utf8');
 assert.ok(v8.includes("../vendor/suncalc.js"));
 for (const asset of ['vendor/three/build/three.core.js','vendor/three/build/three.module.js',
   'vendor/three/build/three.webgpu.js','vendor/three/build/three.tsl.js',
-  'vendor/three/addons/controls/OrbitControls.js','vendor/three/addons/postprocessing/Pass.js','vendor/pathtracer.js','vendor/suncalc.js']){
+  'vendor/three/addons/controls/OrbitControls.js','vendor/three/addons/geometries/RoundedBoxGeometry.js','vendor/three/addons/postprocessing/Pass.js','vendor/pathtracer.js','vendor/suncalc.js']){
   assert.ok(fs.existsSync(path.join(site,asset)),asset+' missing');
 }
 console.log('Same-origin immutable Three.js / SunCalc / pathtracer assets verified');
