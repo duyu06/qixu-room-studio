@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
@@ -446,20 +447,10 @@ function renderThree(){
  }
  for(const item of doc.furniture){
   const group=new THREE.Group();
-  group.position.set(item.x,0,item.z);group.rotation.y=-item.rotation;
+  group.position.set(item.x,0,item.z);
+  group.rotation.y=-item.rotation;
   group.userData.selection={kind:'furniture',id:item.id};
-  const mainMat=new THREE.MeshStandardMaterial({color:FURNITURE[item.type].color,roughness:.78});
-  buildBox(group,mainMat,item.width,item.height,item.depth,0,item.height/2+.03,0);
-  if(item.type==='bed'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#f2efe6'}),
-      item.width*.72,.12,.4,0,item.height+.05,-item.depth*.28);
-  }else if(item.type==='sofa'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#66867c'}),
-      item.width,.43,.19,0,item.height+.20,-item.depth*.37);
-  }else if(item.type==='table'){
-    buildBox(group,new THREE.MeshStandardMaterial({color:'#e1c8a4'}),
-      item.width+.04,.07,item.depth+.04,0,item.height+.05,0);
-  }
+  group.add(createProceduralFurniture(item));
   content.add(group);
  }
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
