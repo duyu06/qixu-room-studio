@@ -30,3 +30,13 @@
  .site-header .header-actions{gap:5px}
  .site-header .save-indicator{display:none}
 }
+
+@media(max-width:580px){
+ /* Feature switcher already replaces duplicate showcase/studio quick links. */
+ .site-header .header-actions>a.btn{display:none}
+ .site-header{gap:6px;padding-inline:7px}
+ .site-header .header-actions{gap:3px;min-width:0}
+ .site-header .header-actions .btn{font-size:9px;padding:7px 6px}
+ .site-header .qx-brand img{width:99px}
+ .site-header .qx-hub-menu summary{padding:7px 7px}
+}
