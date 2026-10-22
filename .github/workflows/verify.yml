@@ -30,3 +30,4 @@ jobs:
           node tests/studio-geometry.test.mjs
           node tests/studio-dxf.test.mjs
           node tests/studio-render-bridge.test.mjs
+          node tests/studio-tour.test.mjs

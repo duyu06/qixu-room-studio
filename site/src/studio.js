@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
+import {canWalkAt,findWalkStart} from './studio-tour.js';
 import {FURNITURE,createProject,validateProject,snapPosition,nearestWall,addWall,
   addOpening,wallPieces,length,interpolated,deleteObject,addFurniture,
   importLegacy,clamp,setOpeningDimension} from './studio-model.js';
@@ -11,6 +12,8 @@ const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
+let touring=false,walkYaw=0,walkPitch=0,mouseTurn=null,lastFrame=0;
+const walkPressed=new Set();
 const copy=()=>structuredClone(doc);
 const el=(tag,attrs={},text)=>{
   const a=document.createElementNS(ns,tag);
@@ -483,7 +486,20 @@ function initThree(){
   renderer.setSize(r.width,r.height,false);
  };
  new ResizeObserver(resize).observe($('three-viewport'));
+ renderer.domElement.addEventListener('pointerdown',e=>{
+   if(!touring)return;mouseTurn={x:e.clientX,y:e.clientY};
+   try{renderer.domElement.setPointerCapture(e.pointerId)}catch{}
+ });
+ renderer.domElement.addEventListener('pointermove',e=>{
+   if(!touring||!mouseTurn)return;
+   const dx=e.clientX-mouseTurn.x,dy=e.clientY-mouseTurn.y;mouseTurn={x:e.clientX,y:e.clientY};
+   walkYaw-=dx*.004;walkPitch=Math.max(-.88,Math.min(.88,walkPitch-dy*.004));
+   camera.rotation.set(walkPitch,walkYaw,0);
+ });
+ renderer.domElement.addEventListener('pointerup',()=>{mouseTurn=null});
+ renderer.domElement.addEventListener('pointercancel',()=>{mouseTurn=null});
  renderer.domElement.addEventListener('click',e=>{
+  if(touring)return;
   const rect=renderer.domElement.getBoundingClientRect();
   const pointer=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,
     -((e.clientY-rect.top)/rect.height*2-1));
@@ -495,10 +511,56 @@ function initThree(){
   }
  });
  ready=true;fit();renderThree();resize();
- function frame(){requestAnimationFrame(frame);if(view!=='3d')return;orbit.update();renderer.render(scene,camera);}
+ function frame(time){
+   requestAnimationFrame(frame);if(view!=='3d')return;
+   const dt=Math.min(.055,Math.max(0,(time-lastFrame)/1000));lastFrame=time;
+   if(touring)walkFrame(dt);else orbit.update();
+   renderer.render(scene,camera);
+ }
  frame();
 }
+function toggleTour(){
+ if(touring){
+   touring=false;walkPressed.clear();mouseTurn=null;
+   if(orbit){orbit.enabled=true;orbit.target.set(0,.8,0);orbit.update();}
+   $('tour-toggle').classList.remove('active');$('tour-toggle').textContent='🚶 室内漫游';
+   stat('已退出漫游，返回可旋转的 3D 视图');return;
+ }
+ setView('3d');
+ if(!ready)return;
+ const start=findWalkStart(doc);
+ if(!start){notify('未找到可站立位置，请先移开家具或调整墙体');return;}
+ touring=true;walkYaw=0;walkPitch=0;
+ orbit.enabled=false;camera.position.set(start[0],1.63,start[1]);
+ camera.rotation.order='YXZ';camera.rotation.set(0,walkYaw,0);
+ $('tour-toggle').classList.add('active');$('tour-toggle').textContent='结束漫游';
+ stat('室内漫游：WASD 移动，按住鼠标拖动观察；门洞可通行');
+ $('interaction-hint').textContent='漫游模式 · WASD 移动 · 按住鼠标旋转 · 点击“结束漫游”返回编辑';
+}
+$('tour-toggle').addEventListener('click',toggleTour);
+window.addEventListener('keydown',e=>{
+ if(!touring||e.target.matches('input,textarea,select'))return;
+ const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
+   e.preventDefault();walkPressed.add(key);}
+});
+window.addEventListener('keyup',e=>walkPressed.delete(e.key.toLowerCase()));
+window.addEventListener('blur',()=>walkPressed.clear());
+function walkFrame(dt){
+ if(!touring||!camera||dt<=0)return;
+ const forward=(walkPressed.has('w')||walkPressed.has('arrowup')?1:0)-
+  (walkPressed.has('s')||walkPressed.has('arrowdown')?1:0);
+ const sideways=(walkPressed.has('d')||walkPressed.has('arrowright')?1:0)-
+  (walkPressed.has('a')||walkPressed.has('arrowleft')?1:0);
+ if(!forward&&!sideways)return;
+ const step=2.3*dt/Math.max(1,Math.hypot(forward,sideways));
+ const dx=(-Math.sin(walkYaw)*forward+Math.cos(walkYaw)*sideways)*step;
+ const dz=(-Math.cos(walkYaw)*forward-Math.sin(walkYaw)*sideways)*step;
+ if(canWalkAt(doc,camera.position.x+dx,camera.position.z))camera.position.x+=dx;
+ if(canWalkAt(doc,camera.position.x,camera.position.z+dz))camera.position.z+=dz;
+}
 function setView(name){
+ if(name!=='3d'&&touring){touring=false;walkPressed.clear();if(orbit)orbit.enabled=true;
+   $('tour-toggle').classList.remove('active');$('tour-toggle').textContent='🚶 室内漫游';}
  view=name;
  document.querySelectorAll('[data-view]').forEach(b=>{
   b.classList.toggle('active',b.dataset.view===name);

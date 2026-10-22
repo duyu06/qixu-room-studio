@@ -17,3 +17,5 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 .studio-room-summary{background:#edf7ef;border-radius:9px;padding:11px 10px;color:#36664c;font-size:11px;line-height:1.7}
 .action-wide{grid-column:span 2}.room-label{font-size:.22px;fill:#43715a;font-weight:bold;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:.04px}
 .wall-handle{cursor:move;r:.14;pointer-events:all}.furniture-rect.collision{stroke:#c94c38;stroke-width:.075;stroke-dasharray:.14,.09;fill:#ead3c5}
+
+#tour-toggle.active{background:#2c7658;border-color:#2c7658;color:white;font-weight:700}
