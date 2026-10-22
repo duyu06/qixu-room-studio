@@ -1,6 +1,6 @@
 # Qixu Unified Studio — One working surface
 
-Canonical editor: /studio.html, includes projects, floor plan, furniture, materials,
+Canonical editor: / (redirects once to /studio.html) and /studio.html, includes projects, floor plan, furniture, materials,
 airflow/solar analysis, and WebGPU lighting in the SAME browser page and canvas.
 
 Legacy URL compatibility: /index.html (historical separate-format floorplan),
