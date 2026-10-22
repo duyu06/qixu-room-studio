@@ -21,3 +21,4 @@ jobs:
           node tests/history-model.test.mjs
           node tests/connected-layout.test.mjs
           node tests/ventilation.test.mjs
+          node tests/solar-cfd.test.mjs

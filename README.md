@@ -38,3 +38,8 @@
 - 这是物理约束的二维稳态无旋流基线，不是三维不可压 Navier–Stokes CFD，也不含真实风压、温差、湍流或实测风速；气流速度只标相对量。彩色粒子仅用于显示数值结果。
 - 天文太阳方向通过 SunCalc 2.1.1 计算；UI 提供纬度/经度、日期、时区，默认北京**演示**数据，不是自动识别用户位置。Three.js 用方向光与 shadow map 根据模型墙体投影；尚无准确窗台高度与外部遮挡模型。
 - 项目实现独立于 GitHub 示例仓库，无直接复制第三方代码。参考：Jos Stam《Stable Fluids》、PavelDoGreat/WebGL-Fluid-Simulation、mharrys/fluids-2d、mourner/suncalc。
+
+## V9 阶段升级
+- 修复 SunCalc 弧度和真北方位的转换，太阳高度与朝向现可正确显示。
+- 气流仍为二维势流快速预览；`qixu-cfd-input.json` 明确输出未校准墙线、家具、进/出风边界、假设值，供后续 OpenFOAM 网格化服务。
+- `photoreal.html` 将作为实验性 WebGPU 路径追踪入口：只有支持 WebGPU 的浏览器能够使用；不影响现有 WebGL 编辑器。

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { PressureFlow2D } from './airflow-solver.js';
+import { sunCalcToScene } from './solar-model.js';
+import { makeCfdInput } from './cfd-export.js';
 
 // Pressure-field/particle tracer is physical-model-based; not decorative qi particles.
 export function createVentilationStudio({scene,renderer,state,host,camera,orbit}) {
@@ -11,6 +13,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
   panel.innerHTML='<h3>V8 · 门窗气流与日照计算</h3>'+
     '<p class="v8-note">空气由门口高压端进入，经墙体/家具之间的可通区域，流向窗口低压端。二维势流近似计算，不是测得的气流。</p>'+
     '<div class="v8-controls"><button id="v8-door" type="button">定位进风门</button><button id="v8-window" type="button">定位排风窗</button><button id="v8-recalc" type="button">重算气流</button></div>'+
+    '<div class="v8-controls" style="margin-top:8px"><button id="v9-export-cfd" type="button">导出 CFD 输入</button><button id="v9-render" type="button">物理光照预览 ↗</button></div>'+
     '<label class="v8-line">示踪速度 <input id="v8-speed" type="range" min=".2" max="3" step=".1" value="1.2"><output id="v8-speed-label">1.2 ×</output></label>'+
     '<div id="v8-solver-info" class="v8-info" role="status">导入户型图后计算流场。</div>'+
     '<h4>天文太阳位置</h4>'+
@@ -29,6 +32,16 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
   $('v8-recalc').addEventListener('click',()=>rebuild());
   ['v8-lat','v8-lon','v8-date','v8-tz'].forEach(id=>$(id).addEventListener('change',updateSolar));
   $('v8-sun-apply').addEventListener('click',updateSolar);
+  $('v9-render').addEventListener('click',()=>window.open('./photoreal.html','_blank','noopener,noreferrer'));
+  $('v9-export-cfd').addEventListener('click',()=>{
+    try{
+      const input=makeCfdInput(plan,{door,window:windowPort,northDeg:Number(state.north||0),heightM:Number(state.height||2.8)});
+      const blob=new Blob([JSON.stringify(input,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='qixu-cfd-input.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2500);
+      airLabel.textContent='已导出 CFD 几何草稿。必须测量并建网格后才能使用 OpenFOAM。';
+    }catch(err){airLabel.textContent=err.message;}
+  });
   function arm(mode){
     markerMode=markerMode===mode?'':mode;
     $('v8-door').classList.toggle('active',markerMode==='door');
@@ -40,6 +53,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     if(!markerMode||!plan)return false;
     const p={x:Math.max(-plan.w/2,Math.min(plan.w/2,x)),z:Math.max(-plan.d/2,Math.min(plan.d/2,z))};
     if(markerMode==='door')door=p;else windowPort=p;
+    plan.ventilation={door:{...door},window:{...windowPort}};
     arm(markerMode); rebuild();return true;
   }
   function clear(){
@@ -81,8 +95,8 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     if(changed){
       // K-4 unit entrance opens on its eastern boundary; upper exterior is window example.
       const isK4=plan.note?.includes('K-4');
-      door=isK4?solverPos(409,239):{x:plan.w*.45,z:-plan.d*.02};
-      windowPort=isK4?solverPos(238,59):{x:plan.w*.04,z:-plan.d*.44};
+      door=plan.ventilation?.door||(isK4?solverPos(409,239):{x:plan.w*.45,z:-plan.d*.02});
+      windowPort=plan.ventilation?.window||(isK4?solverPos(238,59):{x:plan.w*.04,z:-plan.d*.44});
     }
     rebuild();
     solarUpdateAfterPlan();
@@ -131,9 +145,8 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     const sign=utc>=0?'+':'-',offset=Math.abs(utc),hh=String(Math.floor(offset)).padStart(2,'0'),mm=String(Math.round((offset%1)*60)).padStart(2,'0');
     const iso=date+'T'+String(Math.floor(hour)).padStart(2,'0')+':'+(hour%1?'30':'00')+':00'+sign+hh+':'+mm;
     const pos=sunCalc.getPosition(new Date(iso),latitude,longitude);
-    const alt=pos.altitude*Math.PI/180;
-    const bearing=(pos.azimuth-Number(state.north||0))*Math.PI/180;
-    const x=Math.sin(bearing)*Math.cos(alt),z=-Math.cos(bearing)*Math.cos(alt),y=Math.sin(alt);
+    const sol=sunCalcToScene(pos,Number(state.north||0));
+    const {x,y,z}=sol.direction;
     if(!solarLight){
       solarLight=new THREE.DirectionalLight('#fff5de',2.4);solarLight.castShadow=true;
       solarLight.shadow.mapSize.set(2048,2048);solarLight.shadow.camera.near=.2;solarLight.shadow.camera.far=90;
@@ -145,9 +158,9 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     solarLight.target.position.set(0,0,0);
     solarLight.position.set(x*25,Math.max(.1,y*25),z*25);
     scene.children.forEach(o=>{if(o.isDirectionalLight&&o!==solarLight)o.intensity=0;});
-    solarLight.intensity=pos.altitude>0?2.3:0;
-    solarLight.color.set(pos.altitude<16?'#ffd6ac':'#fff5de');
-    sunLabel.textContent='太阳高度 '+pos.altitude.toFixed(1)+'° · 方位 '+pos.azimuth.toFixed(1)+'°（真北顺时针）；阴影按所建墙体投射。地理与开口信息仍需校准。';
+    solarLight.intensity=sol.aboveHorizon?2.3:0;
+    solarLight.color.set(sol.altitudeDeg<16?'#ffd6ac':'#fff5de');
+    sunLabel.textContent='太阳高度 '+sol.altitudeDeg.toFixed(1)+'° · 真北方位 '+sol.bearingDeg.toFixed(1)+'°；窗洞位置与高度仍需校准。';
   }
   requestAnimationFrame(updateParticles);
   loadSun();
