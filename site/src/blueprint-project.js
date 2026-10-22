@@ -15,6 +15,12 @@ export function validateBlueprintPacket(input){
   if(!Array.isArray(plan.furniture||[])||(plan.furniture||[]).length>300||
     !(plan.furniture||[]).every(item=>finite(item.x)&&finite(item.z)&&Math.abs(item.x)<=plan.w/2+1&&Math.abs(item.z)<=plan.d/2+1&&
       Array.isArray(item.dims)&&item.dims.length===3&&item.dims.every(n=>finite(n)&&n>.01&&n<20)))return '家具数据不合法。';
+  const k=plan.calibration;
+  if(k!==undefined && (k.kind!=='two-points'||k.measuredByUser!==true
+    ||!finite(k.distanceMeters)||k.distanceMeters<.1||k.distanceMeters>40
+    ||!Array.isArray(k.imagePoints)||k.imagePoints.length!==2
+    ||!k.imagePoints.every(a=>Array.isArray(a)&&a.length===2&&a.every(finite))))
+    return '标尺校准数据不合法。';
   return null;
 }
 export function makeBlueprintPacket(plan,image){

@@ -68,3 +68,36 @@ test('full blueprint export retains source and geometry',async ({page})=>{
   expect(project.plan.walls.length).toBeGreaterThan(0);
   expect(project.image).toMatch(/^data:image\/jpeg;base64,/);
 });
+
+test('measured scale is stored in the complete blueprint project',async ({page})=>{
+  await page.goto('/');
+  await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
+  const data=await page.evaluate(()=>{
+    const canvas=document.createElement('canvas');canvas.width=474;canvas.height=514;
+    const c=canvas.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,474,514);
+    c.fillStyle='#161616';c.fillRect(40,40,300,9);
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  await page.locator('#photo-input').setInputFiles({
+    name:'measured-room.png',mimeType:'image/png',buffer:Buffer.from(data,'base64')
+  });
+  await expect(page.locator('#qixu-scale-result')).toContainText('尚未校准',{timeout:15000});
+  await page.locator('#qixu-known-length').fill('2');
+  await page.getByRole('button',{name:'开始两点标定'}).click();
+  const viewport=page.locator('#viewport canvas').first();
+  const r=await viewport.boundingBox();
+  expect(r).toBeTruthy();
+  await viewport.click({position:{x:r.width*.43,y:r.height*.51}});
+  await expect(page.locator('#qixu-scale-result')).toContainText('已选起点');
+  await viewport.click({position:{x:r.width*.57,y:r.height*.51}});
+  await expect(page.locator('#qixu-scale-result')).toContainText('校准成功');
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-blueprint-v6')));
+  expect(saved.plan.calibration.measuredByUser).toBe(true);
+  expect(saved.plan.calibration.distanceMeters).toBe(2);
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'下载完整户型项目 JSON'}).click();
+  const file=await download;
+  const json=JSON.parse(readFileSync(await file.path(),'utf8'));
+  expect(json.plan.calibration.measuredByUser).toBe(true);
+  expect(json.plan.calibration.distanceMeters).toBe(2);
+});

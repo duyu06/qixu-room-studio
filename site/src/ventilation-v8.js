@@ -92,7 +92,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     const changed=plan!==next;
     plan=next;
     if(!plan)return;
-    if(changed){
+    if(changed || plan.ventilation){
       // K-4 unit entrance opens on its eastern boundary; upper exterior is window example.
       const isK4=plan.note?.includes('K-4');
       door=plan.ventilation?.door||(isK4?solverPos(409,239):{x:plan.w*.45,z:-plan.d*.02});
@@ -164,5 +164,6 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
   }
   requestAnimationFrame(updateParticles);
   loadSun();
-  return {onPlan,place,isMarking:()=>!!markerMode,rebuild};
+  const getPorts=()=>door&&windowPort?{door:{...door},window:{...windowPort}}:null;
+  return {onPlan,place,isMarking:()=>!!markerMode,rebuild,getPorts};
 }
