@@ -19,7 +19,7 @@ jobs:
       - name: Install Chromium for browser acceptance
         run: npx playwright install --with-deps chromium
       - name: Run browser acceptance suite
-        run: npx playwright test --config=tests/browser/playwright.config.mjs
+        run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/commercial.spec.mjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
