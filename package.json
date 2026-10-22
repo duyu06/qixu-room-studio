@@ -1,0 +1,17 @@
+{
+  "name": "qixu-room-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pinned and same-origin Three.js runtime asset generation",
+  "scripts": {
+    "vendor": "node tools/vendor-deps.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1",
+    "three-gpu-pathtracer": "0.0.27",
+    "suncalc": "2.1.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
