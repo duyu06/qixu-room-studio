@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f4ee">
+<meta name="description" content="栖序 Qixu：从户型到可编辑、可漫游的室内设计空间。直接体验真实运行的 2D/3D 家装工作台。">
+<title>栖序 Qixu · 从户型到生活空间</title>
+<link rel="stylesheet" href="./showcase.css">
+<script type="module" src="./src/showcase.js"></script>
+</head>
+<body>
+<header class="nav">
+ <a class="brand" href="./showcase.html"><span class="brand-glyph">序</span><span>栖序 <small>QIXU STUDIO</small></span></a>
+ <nav class="nav-links" aria-label="页面导航"><a href="#collection">设计案例</a><a href="#workflow">工作方式</a><a href="#progress">产品现状</a></nav>
+ <a class="nav-cta" href="./studio.html">进入设计器 <span>↗</span></a>
+</header>
+<main>
+ <section class="hero" aria-label="产品介绍">
+  <div class="hero-copy">
+   <div class="eyebrow"><span class="pulse"></span> EARLY PRODUCT PREVIEW <span class="eyebrow-stroke"></span> 2026</div>
+   <h1>让家的想象，<br>成为<span>看得见</span>的空间。</h1>
+   <p class="hero-desc">从二维户型到可编辑的三维居所。绘制墙体、打开门窗、布置家具，再走进去感受自己的设计。</p>
+   <div class="hero-buttons">
+    <a class="primary" href="./studio.html?template=sunlit&view=3d">立即体验样板间 <span>↗</span></a>
+    <a class="secondary" href="#collection">探索设计方案 <span>↓</span></a>
+   </div>
+   <div class="hero-foot">
+    <div><strong>2D ↔ 3D</strong><span>画布实时联动</span></div>
+    <div><strong>DXF / JSON</strong><span>项目可导入导出</span></div>
+    <div><strong>无需安装</strong><span>浏览器打开即用</span></div>
+   </div>
+  </div>
+  <div class="hero-visual">
+   <div class="preview-shell">
+    <div class="preview-toolbar"><span class="preview-dots"><i></i><i></i><i></i></span><span class="preview-title">空间设计预览 <em>LIVE PLAN</em></span><span class="preview-symbol">⌘</span></div>
+    <div class="preview-stage">
+     <span class="stage-floating stage-top">03 / LIVE STUDIO</span>
+     <div id="hero-plan" class="hero-plan" role="img" aria-label="当前选中样板间的实际可编辑二维户型预览"></div>
+     <div class="stage-floating stage-bottom"><span class="tiny-pulse"></span> 由真实墙体与家具模型生成</div>
+    </div>
+    <div class="preview-footer"><div><span class="small-label">CURRENT PROJECT</span><strong id="hero-name">日光都市公寓</strong></div>
+     <div class="preview-controls"><button type="button" id="hero-prev" aria-label="上一个户型">←</button><button type="button" id="hero-next" aria-label="下一个户型">→</button></div></div>
+   </div>
+   <span class="visual-corner-label">REAL-TIME DESIGN · MADE EDITABLE</span>
+  </div>
+ </section>
+ <section class="ribbon" aria-label="产品能力">
+  <span>从灵感到可操作的空间</span><b>户型绘制</b><i>◆</i><b>门窗开孔</b><i>◆</i><b>家具布局</b><i>◆</i><b>3D 漫游</b><i>◆</i><b>可恢复项目</b>
+ </section>
+ <section id="collection" class="collection section">
+  <div class="section-head"><div><span class="overline">CURATED SPACES / 01</span><h2>从一个好空间，<br>开始体验。</h2></div>
+   <p>三个可编辑的预设样板间。不是静态效果图——打开后可以真实修改墙、门、窗与家具，再切换 3D 视角。</p></div>
+  <div class="projects" id="projects"></div>
+ </section>
+ <section id="workflow" class="workflow section">
+  <div class="section-head"><div><span class="overline">ONE WORKSPACE / 02</span><h2>好的设计，<br>无需复杂的起点。</h2></div>
+   <p>把装修设计中最常见的四个动作，放进一个可操作的浏览器工作台。</p></div>
+  <div class="steps">
+   <article><span>01 / DRAW</span><div class="step-icon">▦</div><h3>建立户型</h3><p>绘制墙线、输入实际尺寸，或导入 DXF 墙线。图片可作为描线参考。</p></article>
+   <article><span>02 / PLAN</span><div class="step-icon">◫</div><h3>打开空间</h3><p>在墙上增加门窗，实体模型按照开口几何留洞，而不是贴上装饰图标。</p></article>
+   <article><span>03 / DESIGN</span><div class="step-icon">▣</div><h3>布置生活</h3><p>从家具库添加对象，移动、旋转、调整尺寸，保存可继续编辑的方案。</p></article>
+   <article><span>04 / EXPERIENCE</span><div class="step-icon">◈</div><h3>走进设计</h3><p>切换三维视角或第一人称漫游，并导出项目文件、平面图和预览画面。</p></article>
+  </div>
+ </section>
+ <section id="progress" class="progress section">
+  <div class="progress-dark"><div class="progress-copy"><span class="overline">BUILT FOR THE NEXT STEP / 03</span>
+   <h2>不止展示设计。<br><em>让设计真正可用。</em></h2>
+   <p>栖序正在建设一套更开放的在线家居设计工具。当前版本已具备交互式设计工作台和本地项目管理，下一步重点是高品质模型素材、精确建模和商业协作。</p>
+   <a href="./studio.html?template=family&view=3d">体验可编辑 3D 场景 <span>↗</span></a>
+   </div><div class="progress-aside">
+     <div><span>NOW AVAILABLE</span><strong>可交互设计器</strong><small>2D / 3D · 家具 · 门窗 · DXF · 漫游</small></div>
+     <div><span>BUILDING NEXT</span><strong>资产与表现力</strong><small>真实 GLB 模型 · PBR 材质 · 更佳渲染</small></div>
+     <div><span>LONG-TERM GOAL</span><strong>专业协作平台</strong><small>项目云同步 · 团队工作流 · 渲染服务</small></div>
+   </div></div>
+  <div class="disclosure">产品处于早期演示阶段。部分家具采用参数化简化模型，光照和气流计算不代表经过现场验证的工程分析；不展示未经证实的商业数据。</div>
+ </section>
+</main>
+<footer><a class="brand" href="./showcase.html"><span class="brand-glyph">序</span><span>栖序 <small>QIXU STUDIO</small></span></a>
+ <span>让设计更自由，让空间更真实。</span><div><a href="./studio.html">进入工作台 ↗</a><a href="./index.html">空间分析实验室 ↗</a><a href="https://github.com/duyu06/qixu-room-studio" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+</footer>
+</body></html>
