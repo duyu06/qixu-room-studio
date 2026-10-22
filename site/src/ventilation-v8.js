@@ -5,7 +5,7 @@ import { PressureFlow2D } from './airflow-solver.js';
 export function createVentilationStudio({scene,renderer,state,host,camera,orbit}) {
   let plan=null,solver=null,flowObjects=null,part=null,positions=null,colors=null;
   let door=null,windowPort=null,markerMode='',last=0,lastGeometry='',modelSun=null;
-  let sunCalc=null,solar=null;
+  let sunCalc=null,solar=null,lastSolarKey='';
   const panel=document.createElement('section');
   panel.className='v8-panel';
   panel.innerHTML='<h3>V8 · 门窗气流与日照计算</h3>'+
@@ -71,6 +71,7 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     part=new THREE.Points(geom,new THREE.PointsMaterial({size:.12,sizeAttenuation:true,vertexColors:true,transparent:true,opacity:.88,blending:THREE.AdditiveBlending,depthWrite:false}));
     part.frustumCulled=false;flowObjects.add(part);
     part.userData.seeds=Array.from({length:n},(_,i)=>({x:door.x,z:door.z,t:i/n*12,life:i/n*8}));
+    for(let i=0;i<n;i++){positions[i*3]=door.x;positions[i*3+1]=.13;positions[i*3+2]=door.z;}
     airLabel.textContent='二维势流场已计算 · '+solver.nx+' × '+solver.nz+' 网格 · 进风门青色 / 排风窗金色；移动家具后可重算。';
   }
   function onPlan(next){
@@ -91,6 +92,8 @@ export function createVentilationStudio({scene,renderer,state,host,camera,orbit}
     requestAnimationFrame(updateParticles);
     const dt=Math.max(0,Math.min(.045,(time-last)/1000));last=time;
     if(!part||!solver||document.hidden)return;
+    const key=[state.sunHour,state.north,state.light].join('|');
+    if(key!==lastSolarKey){lastSolarKey=key;updateSolar();}
     const seeds=part.userData.seeds,velocity=Number(speed.value);
     const c1=new THREE.Color('#30cbc1'),c2=new THREE.Color('#ffd18b');
     for(let i=0;i<seeds.length;i++){
