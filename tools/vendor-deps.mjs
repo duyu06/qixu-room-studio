@@ -13,6 +13,8 @@ for(const name of readdirSync(srcBuild).filter(x=>x.endsWith('.js'))){
   cpSync(join(srcBuild,name),join(dest,'three/build',name));
 }
 cpSync('node_modules/three/examples/jsm/controls/OrbitControls.js',join(dest,'three/addons/controls/OrbitControls.js'));
+mkdirSync(join(dest,'three/addons/postprocessing'),{recursive:true});
+cpSync('node_modules/three/examples/jsm/postprocessing/Pass.js',join(dest,'three/addons/postprocessing/Pass.js'));
 await build({
   entryPoints:['tools/pathtracer-entry.js'],bundle:true,platform:'browser',format:'esm',
   target:'es2022',outfile:join(dest,'pathtracer.js'),minify:true,
