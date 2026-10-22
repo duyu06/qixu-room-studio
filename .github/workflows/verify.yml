@@ -27,3 +27,5 @@ jobs:
           node tests/blueprint-project.test.mjs
           node tests/scale-calibration.test.mjs
           node tests/studio-model.test.mjs
+          node tests/studio-geometry.test.mjs
+          node tests/studio-dxf.test.mjs
