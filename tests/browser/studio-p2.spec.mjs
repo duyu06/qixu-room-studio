@@ -80,3 +80,25 @@ test('non-DXF file leaves project unchanged',async({page})=>{
   await expect(page.locator('#toast')).toContainText('导入失败');
   expect(await page.evaluate(()=>localStorage.getItem('qixu-studio-v1'))).toBe(before);
 });
+
+
+test('first person walkthrough persists during W key and exits on Escape',async({page})=>{
+ await ready(page);
+ await page.locator('#tour-toggle').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible({timeout:25000});
+ await expect(page.locator('#tour-toggle')).toHaveClass(/active/);
+ await page.keyboard.down('w');
+ await page.waitForTimeout(300);
+ await page.keyboard.up('w');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect(page.locator('#tour-toggle')).toHaveClass(/active/);
+ await page.keyboard.press('Escape');
+ await expect(page.locator('#tour-toggle')).not.toHaveClass(/active/);
+});
+test('new Studio project is recognized by WebGPU preview with no legacy upload',async({page})=>{
+ await ready(page);
+ await page.addInitScript(()=>Object.defineProperty(navigator,'gpu',{configurable:true,value:undefined}));
+ await page.goto('/photoreal.html');
+ await expect(page.locator('#overlay')).toContainText('没有启用 WebGPU');
+ await expect(page.locator('#overlay')).not.toContainText('尚无已保存户型');
+});
