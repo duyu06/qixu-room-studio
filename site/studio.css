@@ -33,3 +33,27 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 @media(max-width:850px){.studio-demo-banner{padding:10px 14px}.studio-demo-banner span{max-width:400px}}
 @media(max-width:580px){.studio-demo-banner{flex-direction:column;align-items:stretch;gap:8px}
 .studio-demo-banner>div:last-child{justify-content:space-between}.studio-demo-banner>div:last-child>*{flex:1;text-align:center}}
+
+/* Unified one-page modules. The same Studio canvas/document remains mounted. */
+.studio-unified-caption{font-size:11px;color:#69836e;white-space:nowrap}
+.studio-project-gallery{display:grid;gap:9px;margin:13px 0 20px}
+.project-home-action,.studio-project-choice{display:block;width:100%;text-align:left;
+ border:1px solid #dce7df;background:#f9fcf9;color:#3b5e48;border-radius:11px;
+ padding:12px 13px;cursor:pointer}
+.project-home-action{margin:12px 0;background:#eaf3ea;font-size:12px;font-weight:750}
+.studio-project-choice:hover,.studio-project-choice.active{background:#e8f4ed;border-color:#8eb89d}
+.studio-project-choice strong{display:block;font-size:13px}
+.studio-project-choice span{display:block;font-size:10px;line-height:1.65;color:#899b8b;margin-top:6px}
+.workspace-info{padding:11px;border-radius:9px;background:#eef4ef;font-size:11px;line-height:1.8;color:#53735c;min-height:38px}
+.studio-sun-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}
+.studio-sun-fields label{font-size:10px;color:#718277;display:grid;gap:5px}
+.studio-sun-fields input{width:100%;min-width:0;border:1px solid #d8e5db;
+ border-radius:8px;padding:9px;font-size:12px}
+#studio-render-frame{display:block;width:100%;height:100%;border:0;background:#e8e8df}
+#studio-render-frame[hidden]{display:none!important}
+#studio-render-samples button.active,#studio-render-walls button.active{
+ background:#dbece0;color:#285a3f;border-color:#78ab89}
+@media(max-width:850px){
+ .studio-unified-caption{display:none}
+ .rail-tab{min-height:59px;padding:7px 2px}
+}

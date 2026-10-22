@@ -18,6 +18,13 @@
 <link rel="icon" type="image/png" href="./assets/qixu-logo-mark.png">
 <link rel="stylesheet" href="./qixu-brand.css">
 <script type="module" src="./src/qixu-shell.js"></script>
+<script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.dataset.embed='1';</script>
+<style>
+html[data-embed="1"],html[data-embed="1"] body{margin:0;height:100%;overflow:hidden}
+html[data-embed="1"] header,html[data-embed="1"] aside{display:none!important}
+html[data-embed="1"] main{height:100dvh;min-height:0;display:block}
+html[data-embed="1"] #viewer{height:100%;width:100%;min-height:0}
+</style>
 </head>
 <body>
 <header><a href="./showcase.html" class="qx-brand" data-qixu-brand aria-label="栖序 QIXU 产品首页"></a><div><h1>物理光照实验室</h1><small>QIXU / WebGPU PATH TRACING</small></div><span class="qx-nav-slot" data-qixu-nav></span><a href="./studio.html" data-qixu-studio-link>← 返回实时 3D 编辑器</a></header>
