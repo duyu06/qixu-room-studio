@@ -17,6 +17,9 @@ test('single Studio workspace switches project, furniture, analysis and renderer
  await expect(page.locator('#plan-svg')).toBeVisible();
  await expect(page.locator('#studio-flow-status')).toContainText('已计算');
  await expect(page.locator('#studio-flow-overlay circle')).toHaveCount(2);
+ await page.locator('#studio-bagua').check();
+ await expect(page.locator('#studio-flow-overlay text[data-bagua]')).toHaveCount(8);
+ await page.locator('#studio-bagua').uncheck();
  await expect(page.locator('[data-sidebar="analysis"]')).toBeVisible();
  await page.locator('[data-panel="library"]').click();
  await page.getByRole('button',{name:/单椅/}).click();

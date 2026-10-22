@@ -1,5 +1,6 @@
 import {SHOWCASE_TEMPLATES} from './showcase-templates.js';
 import {flowTrajectories,localSolarDate} from './studio-analysis.js';
+import {BAGUA} from './feng-model.js';
 
 /** One lightweight controller. Existing Studio owns the authoritative editable document. */
 export function mountUnifiedStudio({readDoc,readDemo,setView,draw,switchProject}){
@@ -53,8 +54,22 @@ export function mountUnifiedStudio({readDoc,readDemo,setView,draw,switchProject}
      root.append(groupChild('text',{x:p.x+.13,y:p.z-.18,
        'font-size':'.16',fill:color,'font-weight':'bold'},label));
    }
+   if($('studio-bagua').checked){
+     const p=readDoc(),north=Number($('studio-north').value)||0;
+     const rx=p.width*.4,rz=p.depth*.4,rad=north*Math.PI/180;
+     for(let i=0;i<BAGUA.length;i++){
+       const d=BAGUA[i],theta=i*Math.PI/4+rad;
+       const x=Math.sin(theta)*rx,z=-Math.cos(theta)*rz;
+       const text=groupChild('text',{x,y:z,'text-anchor':'middle',
+         'font-size':'.19',fill:d.color,'font-weight':'bold',
+         stroke:'#fff','stroke-width':'.025','paint-order':'stroke'},d.glyph+' '+d.direction+' · '+d.element);
+       text.dataset.bagua=d.direction;root.append(text);
+     }
+   }
    layer.append(root);
  }
+ $('studio-bagua').addEventListener('change',draw);
+ $('studio-north').addEventListener('change',draw);
  function activatePanel(name){
    panel=name;
    if(name==='analysis'){setView('2d');rebuildFlow();draw();}
