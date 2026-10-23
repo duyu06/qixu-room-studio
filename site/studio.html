@@ -165,7 +165,8 @@
       </pattern></defs>
       <g id="world"></g><g id="preview-layer"></g>
     </svg>
-    <div id="three-viewport" hidden><div class="three-dock-title">3D 实时预览 <button type="button" id="dock-expand" title="放大 3D 视图">↗ 放大</button><button type="button" id="dock-close" title="关闭预览">×</button></div></div>
+    <div id="split-resizer" role="separator" aria-label="调整 2D 与 3D 窗口宽度" aria-orientation="vertical" tabindex="0" aria-valuemin="25" aria-valuemax="65" aria-valuenow="36" hidden></div>
+    <div id="three-viewport" hidden><div class="three-dock-title">3D 实时预览 <button type="button" id="dock-focus" title="定位到选中的家具">◎ 定位</button><button type="button" id="dock-expand" title="放大 3D 视图">↗ 放大</button><button type="button" id="dock-close" title="关闭预览">×</button></div></div>
     <div id="integrated-preview" hidden><iframe id="integrated-render-frame" title="当前项目 WebGPU 光照预览" loading="lazy"></iframe></div>
     <div class="canvas-help" id="interaction-hint">点选墙体可修改参数；按 W 绘墙，D 添加门，G 添加窗。</div>
     <div class="compass">N <span>↑</span></div>
