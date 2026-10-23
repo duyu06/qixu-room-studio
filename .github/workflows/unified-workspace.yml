@@ -17,6 +17,12 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --no-audit --no-fund @playwright/test@1.64.0
+      - name: Fetch upstream IFC regression fixture (test-only)
+        run: |
+          mkdir -p tests/fixtures
+          curl --fail --location --silent --show-error --retry 3 \
+            https://raw.githubusercontent.com/ThatOpen/engine_web-ifc/6b33ddf26c74d4881febaabf7a5bcb5259eccd96/examples/example.ifc \
+            --output tests/fixtures/web-ifc-example.ifc
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --config=tests/browser/playwright.config.mjs tests/browser/unified-workspace.spec.mjs tests/browser/full-workspace-regression.spec.mjs
       - uses: actions/upload-artifact@v4
