@@ -218,3 +218,17 @@ test('airflow preview toggles without losing 3D scene and floor textures persist
  await page.reload();
  expect((await project()).floorPattern).toBe('tile');
 });
+
+test('wall PBR texture mode persists after scene redraw and reload',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('[data-panel="materials"]').click();
+ await page.locator('[data-wall-pattern="wallpaper"]').click();
+ let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
+ expect(saved.wallPattern).toBe('wallpaper');
+ await page.reload();
+ saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
+ expect(saved.wallPattern).toBe('wallpaper');
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
