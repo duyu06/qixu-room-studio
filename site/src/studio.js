@@ -4,6 +4,7 @@ import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
+import {cfdSurfaceStl} from './studio-cfd-stl.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -362,6 +363,15 @@ function flowSettings(){
  if(items.length>1)openingFractions[items.at(-1).id]=doc.flowOutlet??1;
  return {pressurePa:doc.flowPressurePa??5,openings:openingFractions};
 }
+$('cfd-export-stl').addEventListener('click',()=>{
+ try{
+  const geometry=cfdSurfaceStl(doc);
+  const blob=new Blob([geometry],{type:'model/stl'}),url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download='qixu-obstacles.stl';link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  $('cfd-result-status').textContent='已导出墙体和家具 STL；仍需流体域网格、边界映射和 OpenFOAM 求解。';
+ }catch(e){$('cfd-result-status').textContent='STL 导出失败：'+e.message;}
+});
 $('cfd-export').addEventListener('click',()=>{
  try{
   const request=buildCfdJob(doc,flowSettings());
