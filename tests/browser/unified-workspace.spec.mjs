@@ -271,3 +271,13 @@ test('CFD export offers validated solver input, not fabricated flow results',asy
  expect(download.suggestedFilename()).toBe('qixu-openfoam-input.json');
  await expect(page.locator('#cfd-result-status')).toContainText('尚无 OpenFOAM 结果');
 });
+
+test('CFD STL export downloads actual 3D obstacle geometry',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="analysis"]').click();
+ const pending=page.waitForEvent('download');
+ await page.locator('#cfd-export-stl').click();
+ const download=await pending;
+ expect(download.suggestedFilename()).toBe('qixu-obstacles.stl');
+ await expect(page.locator('#cfd-result-status')).toContainText('流体域网格');
+});
