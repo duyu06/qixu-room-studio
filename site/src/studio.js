@@ -275,7 +275,7 @@ function inspect(){
    width:f.width,depth:f.depth,height:f.height,rotation:f.rotation});selection={kind:'furniture',id:n.id};});
  });
 }
-function picked(kind,id){selection={kind,id};draw();inspect();}
+function picked(kind,id){selection={kind,id};draw();inspect();$('three-viewport').dataset.selectedId=id;}
 svg.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=screenPoint(e);if(!p)return;
@@ -860,7 +860,7 @@ function initThree(){
   for(const hit of ray.intersectObjects(content.children,true)){
    let object=hit.object;
    while(object&&object!==content&&!object.userData.selection)object=object.parent;
-   if(object?.userData.selection){selection=object.userData.selection;inspect();draw();break;}
+   if(object?.userData.selection){picked(object.userData.selection.kind,object.userData.selection.id);break;}
   }
  });
  ready=true;updateCameraTool();fit();renderThree();resize();
@@ -922,6 +922,7 @@ function setView(name){
   b.setAttribute('aria-pressed',String(b.dataset.view===name));
  });
  $('canvas-wrap').classList.toggle('dual-view',name==='split');
+ $('split-resizer').hidden=name!=='split';
  svg.toggleAttribute('hidden',name==='3d');$('three-viewport').hidden=name==='2d';
  $('mode-description').textContent=name==='2d'?'平面编辑 · 网格吸附':name==='split'?
    '2D 编辑 / 3D 实时同步':'3D 预览 · 拖动旋转 / 滚轮缩放';
@@ -942,6 +943,37 @@ function setView(name){
   }
  }
 }
+function focusSelectedFurniture(){
+ const f=selection?.kind==='furniture'&&doc.furniture.find(x=>x.id===selection.id);
+ if(!f){notify('请先在 2D 或 3D 选中一件家具');return;}
+ if(!ready)initThree();
+ const target=new THREE.Vector3(f.x,Math.max(.4,f.height/2),f.z);
+ const offset=new THREE.Vector3(Math.max(2,f.width*2.5),Math.max(2.1,f.height*2.5),Math.max(2,f.depth*2.5));
+ camera.position.copy(target).add(offset);orbit.target.copy(target);orbit.update();
+ stat('3D 镜头已定位到选中家具');
+}
+$('dock-focus').addEventListener('click',focusSelectedFurniture);
+const splitHandle=$('split-resizer');let resizingDock=false;
+function setDockWidth(percent){
+ const size=Math.max(25,Math.min(65,Math.round(percent)));
+ $('canvas-wrap').style.setProperty('--dock-width',size+'%');
+ splitHandle.setAttribute('aria-valuenow',String(size));
+}
+splitHandle.addEventListener('pointerdown',e=>{
+ if(view!=='split')return;resizingDock=true;splitHandle.setPointerCapture(e.pointerId);e.preventDefault();
+});
+splitHandle.addEventListener('pointermove',e=>{
+ if(!resizingDock)return;
+ const r=$('canvas-wrap').getBoundingClientRect();
+ if(window.matchMedia('(max-width:960px)').matches)return;
+ setDockWidth((r.right-e.clientX)/r.width*100);
+});
+for(const event of ['pointerup','pointercancel'])splitHandle.addEventListener(event,()=>resizingDock=false);
+splitHandle.addEventListener('keydown',e=>{
+ const current=Number(splitHandle.getAttribute('aria-valuenow')||36);
+ if(e.key==='ArrowLeft'){setDockWidth(current+5);e.preventDefault();}
+ if(e.key==='ArrowRight'){setDockWidth(current-5);e.preventDefault();}
+});
 $('dock-expand').addEventListener('click',()=>setView('3d'));
 $('dock-close').addEventListener('click',()=>setView('2d'));
 
