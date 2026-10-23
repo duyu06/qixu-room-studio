@@ -61,3 +61,16 @@ test('3D navigation controls switch camera tools without leaving workspace',asyn
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect(page).toHaveURL(/studio\.html/);
 });
+
+test('material sidebar lighting presets respond without navigation',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('[data-panel="materials"]').click();
+ for(const preset of ['day','evening','showcase']){
+   await page.locator('[data-lighting="'+preset+'"]').click();
+   await expect(page.locator('[data-lighting="'+preset+'"]')).toHaveClass(/active/);
+   expect(await page.evaluate(()=>localStorage.getItem('qixu-lighting-mode'))).toBe(preset);
+ }
+ await expect(page.locator('#plan-svg')).toBeHidden();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
