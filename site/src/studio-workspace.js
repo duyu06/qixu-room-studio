@@ -13,8 +13,9 @@ function current(){
 }
 function hidePreview(){
  surface.hidden=true;
- $('plan-svg').toggleAttribute('hidden',document.querySelector('[data-view].active')?.dataset.view!=='2d');
- $('three-viewport').hidden=document.querySelector('[data-view].active')?.dataset.view!=='3d';
+ const active=document.querySelector('[data-view].active')?.dataset.view;
+ $('plan-svg').toggleAttribute('hidden',active==='3d');
+ $('three-viewport').hidden=active==='2d';
 }
 function showAnalysis(){
  const doc=current(),dest=$('studio-analysis-result');
