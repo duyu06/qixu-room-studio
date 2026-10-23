@@ -45,3 +45,11 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 .rotation-handle{fill:#fff;stroke:#238463;stroke-width:.065;cursor:grab;touch-action:none}
 .rotation-handle:hover{fill:#b9ead2;stroke-width:.09}
 .rotation-handle:active{cursor:grabbing}
+
+/* Unified simulation tool: Coohom-like click-to-place flow within the current canvas. */
+#plan-svg.placing-wind-source{cursor:crosshair;touch-action:none}
+.wind-source-marker{fill:#17b8ce;stroke:#fff;stroke-width:.075;filter:drop-shadow(0 0 2px #136a7b)}
+.wind-source-arrow{stroke:#137a8a;stroke-width:.07;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.wind-source-label{font-size:.25px;fill:#115667;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:.065}
+#place-wind-source[aria-pressed="true"]{background:#d9f4ec;border-color:#22917d;color:#125f52}
+#wind-placement-hint{min-height:2em}
