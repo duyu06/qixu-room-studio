@@ -22,3 +22,8 @@ const curved=parseDxf(bulge);
 assert.ok(curved.project.walls.length>project.walls.length,'bulged polyline must be tessellated');
 assert.equal(curved.project.walls[0].layer,'WALLS');
 console.log('DXF import/export meters, units, arc tessellation and layers passed');
+
+const onlyWalls=parseDxf(source,'auto',{layers:['WALLS']});
+assert.deepEqual(onlyWalls.layers.sort(),['0','WALLS']);
+assert.equal(onlyWalls.project.walls.length,1,'selected CAD layer must exclude unrelated polylines');
+assert.throws(()=>parseDxf(source,'auto',{layers:['NOT_FOUND']}),/没有找到/);
