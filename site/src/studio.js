@@ -76,6 +76,7 @@ function refresh(){
  $('geometry-stats').textContent=doc.walls.length+' 段墙 · '+doc.openings.length+' 个门窗 · '+doc.furniture.length+' 件家具';
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  draw();inspect();if(ready){renderThree();window.qixuSetLighting?.(doc.lightingMode||'day');}
+ $('texture-repeat').value=doc.textureRepeat??3;
  $('flow-pressure').value=doc.flowPressurePa??5;$('flow-inlet').value=(doc.flowInlet??1)*100;$('flow-outlet').value=(doc.flowOutlet??1)*100;
  showFlowEstimate();save();
 }
@@ -377,6 +378,13 @@ for(const [id,key,scale] of [['flow-pressure','flowPressurePa',1],['flow-inlet',
 let textureTarget='wall';
 $('texture-wall').addEventListener('click',()=>{textureTarget='wall';$('texture-file').click();});
 $('texture-floor').addEventListener('click',()=>{textureTarget='floor';$('texture-file').click();});
+for(const [id,key] of [['texture-clear-wall','wallTexture'],['texture-clear-floor','floorTexture']]){
+ $(id).addEventListener('click',()=>{change(()=>{delete doc[key];});notify('已清除贴图');});
+}
+$('texture-repeat').addEventListener('change',e=>{
+ const n=Number(e.target.value);if(!Number.isInteger(n)||n<1||n>12){notify('重复次数需为 1–12');return;}
+ change(()=>{doc.textureRepeat=n;});
+});
 $('texture-file').addEventListener('change',e=>{
  const file=e.target.files?.[0];e.target.value='';
  if(!file)return;
@@ -610,7 +618,7 @@ function disposeGroup(group){
 function renderThree(){
  if(!ready)return;
  // Preserve GPU geometry, textures and materials when only UI/selection/lighting changed.
- const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.floorTexture?.length,doc.floorTexture?.slice(-50),doc.wallColor,doc.wallPattern,doc.wallTexture?.length,doc.wallTexture?.slice(-50),doc.reference,doc.walls,doc.openings,demoXray]);
+ const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.floorTexture?.length,doc.floorTexture?.slice(-50),doc.textureRepeat,doc.wallColor,doc.wallPattern,doc.wallTexture?.length,doc.wallTexture?.slice(-50),doc.reference,doc.walls,doc.openings,demoXray]);
  const furnitureKey=JSON.stringify(doc.furniture);
  const sceneKey=structureKey+'|'+furnitureKey;
  if(sceneKey===lastSceneKey)return;
@@ -650,7 +658,7 @@ function renderThree(){
  }
  if(airflowOverlay){scene.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(doc.width,doc.depth),
-   floorMaterial(doc.floor,doc.floorPattern||'auto',doc.floorTexture||null));
+   floorMaterial(doc.floor,doc.floorPattern||'auto',doc.floorTexture||null,doc.textureRepeat||3));
  floor.rotation.x=-Math.PI/2;floor.position.y=.02;floor.receiveShadow=true;content.add(floor);
  if(doc.reference){
   const texture=new THREE.TextureLoader().load(doc.reference);
@@ -666,7 +674,7 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null);
+  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   for(const piece of wallPieces(doc,wall)){
