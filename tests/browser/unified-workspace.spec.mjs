@@ -392,3 +392,18 @@ test('dual view resize handle and selected furniture focus work without view nav
  await expect(page.locator('#status-text')).toContainText('镜头已定位');
  await expect(page.locator('#plan-svg')).toBeVisible();
 });
+
+test('editor exposes alignment snapping and keyboard nudge in shared 2D/3D mode',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await expect(page.locator('#snap-furniture')).toBeChecked();
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('[data-furniture-id] rect').last().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:320,clientY:320});
+ const field=page.locator('[data-prop="x"]');
+ await expect(field).toBeVisible();
+ const before=Number(await field.inputValue());
+ await page.locator('#plan-svg').focus();
+ await page.keyboard.press('ArrowRight');
+ await expect.poll(async()=>Number(await page.locator('[data-prop="x"]').inputValue())).toBeGreaterThan(before);
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
