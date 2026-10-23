@@ -33,3 +33,4 @@ jobs:
           node tests/studio-dxf.test.mjs
           node tests/studio-render-bridge.test.mjs
           node tests/studio-tour.test.mjs
+          node tests/studio-airflow-path.test.mjs
