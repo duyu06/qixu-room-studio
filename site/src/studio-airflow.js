@@ -1,9 +1,9 @@
 import {airflowRoute} from './studio-airflow-path.js';
 import * as THREE from 'three';
 // Educational airflow streamlines only. NOT Navier-Stokes/CFD velocity predictions.
-export function makeAirflowOverlay(doc,{count=48}={}){
+export function makeAirflowOverlay(doc,{count=48,openings={}}={}){
  const group=new THREE.Group();group.name='airflow-preview';
- const route=airflowRoute(doc);
+ const route=airflowRoute(doc,{furniture:true,openingFractions:openings});
  if(!route||route.length<2)return {group,update:()=>{},available:false};
  const lengths=[0];for(let i=1;i<route.length;i++)lengths.push(lengths.at(-1)+Math.hypot(route[i][0]-route[i-1][0],route[i][1]-route[i-1][1]));
  const total=lengths.at(-1);if(total<.01)return {group,update:()=>{},available:false};
