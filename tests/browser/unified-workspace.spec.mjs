@@ -300,3 +300,24 @@ test('selected furniture offers precise 90 degree rotation and keyboard duplicat
  await page.locator('[data-view="2d"]').click();
  await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
 });
+
+test('custom wind source and wider airflow coverage persist',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="analysis"]').click();
+ await page.locator('#airflow-source').selectOption('custom');
+ await page.locator('#airflow-source-x').fill('-2');
+ await page.locator('#airflow-source-x').dispatchEvent('change');
+ await page.locator('#airflow-source-z').fill('0.5');
+ await page.locator('#airflow-source-z').dispatchEvent('change');
+ await page.locator('#airflow-spread').fill('2.6');
+ await page.locator('#airflow-spread').dispatchEvent('change');
+ await page.locator('#airflow-toggle').check();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ const key='qixu-studio-demo-sunlit-v1';
+ let p=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ expect(p.airflowSource).toBe('custom');expect(p.airflowX).toBe(-2);
+ expect(p.airflowSpread).toBe(2.6);
+ await page.reload();
+ p=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ expect(p.airflowSource).toBe('custom');expect(p.airflowZ).toBe(.5);
+});
