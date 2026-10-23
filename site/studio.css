@@ -53,3 +53,23 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 .wind-source-label{font-size:.25px;fill:#115667;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:.065}
 #place-wind-source[aria-pressed="true"]{background:#d9f4ec;border-color:#22917d;color:#125f52}
 #wind-placement-hint{min-height:2em}
+
+/* Dual canvas editing: 2D takes the lead, 3D stays visible as a responsive dock. */
+.canvas.dual-view{display:flex;gap:0}
+.canvas.dual-view #plan-svg{display:block;flex:1 1 64%;width:64%;min-width:0;height:100%}
+.canvas.dual-view #three-viewport{position:relative;display:block;flex:0 0 36%;width:36%;min-width:230px;height:100%;border-left:1px solid #d9e5dd;background:#eef3ef}
+#three-viewport{position:relative}
+#three-viewport .three-dock-title{display:none}
+.canvas.dual-view .three-dock-title{position:absolute;z-index:3;display:flex!important;align-items:center;gap:8px;top:10px;left:12px;right:12px;width:auto;height:36px;padding:0 10px;background:#ffffffeb;border:1px solid #dfebe4;border-radius:9px;color:#315545;font-size:12px;font-weight:700;pointer-events:auto}
+.three-dock-title button{margin-left:auto;border:1px solid #d9e6df;background:#fff;border-radius:6px;cursor:pointer;padding:4px 8px}
+.three-dock-title button+button{margin-left:0}
+.canvas.dual-view #three-viewport canvas{width:100%;height:100%}
+.canvas.dual-view .compass{right:calc(36% + 16px)}
+.canvas.dual-view .canvas-help{left:32%;max-width:58%}
+@media(max-width:960px){
+ .canvas.dual-view{display:flex;flex-direction:column}
+ .canvas.dual-view #plan-svg{flex:1 1 58%;width:100%;height:58%;min-height:150px}
+ .canvas.dual-view #three-viewport{flex:1 1 42%;width:100%;min-width:0;height:42%;min-height:170px;border-left:0;border-top:1px solid #d9e5dd}
+ .canvas.dual-view .compass{right:18px}
+ .canvas.dual-view .canvas-help{left:50%;max-width:90%;bottom:44%}
+}
