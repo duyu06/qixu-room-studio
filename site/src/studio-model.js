@@ -22,7 +22,7 @@ export function createProject(){
     {id:id(),a:[.8,-3.4],b:[.8,3.4]}
   ];
   return {schema:'qixu-studio',version:MODEL_VERSION,title:'我的第一个空间',width:12,depth:9,
-    wallHeight:2.8,thickness:.14,lightingMode:'day',floorPattern:'auto',floor:'#ded4c3',wallColor:'#fffaf0',reference:null,
+    wallHeight:2.8,thickness:.14,lightingMode:'day',wallPattern:'paint',floorPattern:'auto',floor:'#ded4c3',wallColor:'#fffaf0',reference:null,
     walls,openings:[
       {id:id(),kind:'door',wallId:walls[4].id,t:.52,width:.9,height:2.1,sill:0},
       {id:id(),kind:'door',wallId:walls[0].id,t:.48,width:.9,height:2.1,sill:0},
@@ -153,6 +153,7 @@ export function addFurniture(doc,type){
 }
 export function validateProject(doc){
   if(!doc||doc.schema!=='qixu-studio'||doc.version!==1)return '不支持的项目格式';
+  if(doc.wallPattern!==undefined&&!['paint','plaster','wallpaper'].includes(doc.wallPattern))return '墙面材质类型错误';
   if(doc.floorPattern!==undefined&&!['auto','wood','stone','tile'].includes(doc.floorPattern))return '地面纹理类型错误';
   if(doc.lightingMode!==undefined&&!['day','evening','showcase'].includes(doc.lightingMode))return '光照预设错误';
   if(!Number.isFinite(doc.width)||!Number.isFinite(doc.depth)||doc.width<3||doc.depth<3||
