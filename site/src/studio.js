@@ -74,7 +74,7 @@ function sidebar(name){
 }
 function fit(){
  zoom=1;draw();
- if(orbit){camera.position.set(doc.width*.85,Math.max(9,doc.depth*1.25),doc.depth*1.45);
+ if(orbit){camera.position.set(doc.width*.88,Math.max(3.7,doc.depth*.66),doc.depth*1.7);
   orbit.target.set(0,.8,0);orbit.update();}
 }
 function screenPoint(e){
