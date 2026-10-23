@@ -99,6 +99,10 @@
       <button data-floor="#d9d8d2" style="--sw:#d9d8d2" title="浅灰石"></button>
       <button data-floor="#eee5d8" style="--sw:#eee5d8" title="米白砖"></button>
     </div>
+    <h3>自定义贴图（当前墙面或地面）</h3>
+    <div class="action-grid"><button type="button" id="texture-wall">上传墙面贴图</button><button type="button" id="texture-floor">上传地面贴图</button></div>
+    <input type="file" id="texture-file" accept="image/png,image/jpeg,image/webp" hidden>
+    <p class="hint">仅支持 1MB 内图片，自动保存到项目 JSON；避免大纹理导致浏览器存储不足。</p>
     <h3>墙面材质</h3><div class="action-grid"><button data-wall-pattern="paint" type="button">乳胶漆</button><button data-wall-pattern="plaster" type="button">哑光肌理</button><button data-wall-pattern="wallpaper" type="button">墙纸纹理</button></div><h3>墙体配色</h3>
     <div class="swatches" id="wall-swatches">
       <button data-wall-color="#fffaf0" style="--sw:#fffaf0" title="暖白"></button>
@@ -112,6 +116,10 @@
       <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
     <h3>三维气流示意</h3>
     <label class="field"><input id="airflow-toggle" type="checkbox"> 显示流动粒子（连接门窗开口）</label>
+    <label class="field">进出风压差（Pa，输入假设值）<input id="flow-pressure" type="number" min="0" max="100" step="0.5" value="5"></label>
+    <label class="field">进风口开度（%）<input id="flow-inlet" type="range" min="0" max="100" value="100"></label>
+    <label class="field">出风口开度（%）<input id="flow-outlet" type="range" min="0" max="100" value="100"></label>
+    <div id="flow-estimate" role="status" class="hint">等待计算简化孔口流量估算…</div>
     <label class="field">动画速度 <input id="airflow-speed" type="range" min="0.2" max="3" step="0.2" value="1"></label>
     <p class="hint">粒子路径是通风概念示意，不提供风速、压力、涡流或 CFD 结果。</p>
     <div id="studio-analysis-result" class="unified-analysis-result" role="status">切换到分析后计算当前空间…</div>
