@@ -2,7 +2,7 @@
 // Requires an explicit or CAD-recorded unit; no scripts or XREF URLs.
 import {createProject} from './studio-model.js';
 const FACTORS={mm:.001,cm:.01,m:1,inch:.0254,ft:.3048};
-export function parseDxf(text,unit='auto'){
+export function parseDxf(text,unit='auto',{layers=null}={}){
   if(typeof text!=='string'||text.length>5_000_000||text.includes('\0'))throw Error('只支持 5MB 内的文本 DXF 文件');
   const lines=text.replace(/\r/g,'').split('\n'),pairs=[];
   for(let i=0;i+1<lines.length;i+=2)pairs.push([lines[i].trim(),lines[i+1].trim()]);
@@ -29,6 +29,8 @@ export function parseDxf(text,unit='auto'){
   const resolved=unit==='auto'?unitFromFile:unit;
   if(!resolved||!FACTORS[resolved])throw Error('DXF 没有可识别的图纸单位，请选择毫米、厘米或米后重试');
   const factor=FACTORS[resolved],segments=[];
+  const layerFilter=layers?new Set(layers):null;
+  const sourceLayers=new Set();
   const emit=(a,b,layer)=>{if(a.every(Number.isFinite)&&b.every(Number.isFinite)&&Math.hypot(b[0]-a[0],b[1]-a[1])>1e-8)
     segments.push([a[0],a[1],b[0],b[1],layer]);};
   const tessellate=(a,b,bulge,layer)=>{
@@ -50,6 +52,8 @@ export function parseDxf(text,unit='auto'){
   };
   for(const entity of entities){
     const d=entity.data,layer=d.find(([a])=>a==='8')?.[1]||'0';
+    sourceLayers.add(layer);
+    if(layerFilter&&!layerFilter.has(layer))continue;
     if(entity.type==='LINE'){
       const n=k=>Number(d.find(([a])=>a===k)?.[1]);
       emit([n('10'),n('20')],[n('11'),n('21')],layer);
@@ -93,7 +97,7 @@ export function parseDxf(text,unit='auto'){
       layer:s[4],a:[Number((s[0]*factor-mx).toFixed(4)),Number((my-s[1]*factor).toFixed(4))],
       b:[Number((s[2]*factor-mx).toFixed(4)),Number((my-s[3]*factor).toFixed(4))]}));
   if(!doc.walls.length)throw Error('有效墙线为空');
-  return {project:doc,units:resolved,wallCount:doc.walls.length};
+  return {project:doc,units:resolved,wallCount:doc.walls.length,layers:[...sourceLayers]};
 }
 export function exportDxf(doc){
   const out=['0','SECTION','2','HEADER','9','$INSUNITS','70','6','0','ENDSEC','0','SECTION','2','ENTITIES'];
