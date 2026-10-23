@@ -389,7 +389,7 @@ function showFlowEstimate(){
 }
 function resetFlowOverlay(){
  if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
- if(airflowEnabled&&ready){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings});scene.add(airflowOverlay.group);}
+ if(airflowEnabled&&ready){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
  $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
 }
 for(const [id,key,scale] of [['flow-pressure','flowPressurePa',1],['flow-inlet','flowInlet',.01],['flow-outlet','flowOutlet',.01]]){
