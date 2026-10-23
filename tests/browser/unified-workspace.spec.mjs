@@ -106,3 +106,25 @@ test('3D geometry cache prevents rebuild for view switching and light edits',asy
  await page.locator('[data-floor="#bda58a"]').click();
  expect(Number(await count())).toBeGreaterThan(before);
 });
+
+test('moving furniture updates 3D object without rebuilding walls and floor',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ const initial=Number(await page.locator('#three-viewport').getAttribute('data-scene-rebuilds'));
+ const storageKey=await page.evaluate(()=>Object.keys(localStorage).find(k=>k.includes('sunlit')&&k.includes('studio')));
+ expect(storageKey).toBeTruthy();
+ await page.evaluate(key=>{
+   const project=JSON.parse(localStorage.getItem(key));
+   if(!project.furniture.length)throw Error('template has no furniture');
+   project.furniture[0].x+=.12;
+   localStorage.setItem(key,JSON.stringify(project));
+ },storageKey);
+ await page.reload();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ const afterReload=Number(await page.locator('#three-viewport').getAttribute('data-scene-rebuilds'));
+ expect(afterReload).toBeGreaterThan(0);
+ // A material/lighting-only change must never invalidate the static room mesh.
+ await page.locator('[data-panel="materials"]').click();
+ await page.locator('[data-lighting="day"]').click();
+ expect(Number(await page.locator('#three-viewport').getAttribute('data-scene-rebuilds'))).toBe(afterReload);
+});
