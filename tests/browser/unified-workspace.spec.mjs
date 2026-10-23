@@ -199,3 +199,22 @@ test('P2 IFC STEP wall geometry imports through local web-ifc WASM',async({page}
  expect(saved.walls.every(w=>w.id.startsWith('ifc-')&&w.ifcExpressId)).toBeTruthy();
  expect(errors).toEqual([]);
 });
+
+test('airflow preview toggles without losing 3D scene and floor textures persist',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="analysis"]').click();
+ await page.locator('#airflow-toggle').check();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect(page.locator('#three-viewport')).toHaveAttribute('data-airflow-active','true');
+ await page.locator('#airflow-toggle').uncheck();
+ await expect(page.locator('#three-viewport')).toHaveAttribute('data-airflow-active','false');
+ await page.locator('[data-panel="materials"]').click();
+ await page.locator('[data-floor-pattern="tile"]').click();
+ const project=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
+ expect((await project()).floorPattern).toBe('tile');
+ await page.locator('[data-view="2d"]').click();
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.reload();
+ expect((await project()).floorPattern).toBe('tile');
+});
