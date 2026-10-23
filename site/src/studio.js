@@ -402,8 +402,18 @@ $('file-glb').addEventListener('change',async e=>{
   const binary=new Uint8Array(buffer);let raw='';
   for(let i=0;i<binary.length;i+=32768)raw+=String.fromCharCode(...binary.subarray(i,i+32768));
   const data='data:model/gltf-binary;base64,'+btoa(raw),id=selection.id;
-  if(change(()=>{const item=doc.furniture.find(f=>f.id===id);if(!item)throw Error('家具已删除');item.modelData=data;}))
-   notify('GLB 已绑定选中的家具；切换 3D 查看');
+  // glTF 2.0 uses meters. Preserve intrinsic model measurements; never silently
+  // stretch a newly imported product to a generic furniture template's dimensions.
+  const gltf=await new Promise((resolve,reject)=>glbLoader.parse(buffer,'',resolve,reject));
+  const box=new THREE.Box3().setFromObject(gltf.scene),size=box.getSize(new THREE.Vector3());
+  if(![size.x,size.y,size.z].every(Number.isFinite)||size.x<.1||size.z<.1||
+     size.x>20||size.z>20||size.y<.005||size.y>20)
+    throw Error('GLB 必须以米为单位，尺寸为有效家具范围（0.1–20 米）');
+  if(change(()=>{
+    const item=doc.furniture.find(f=>f.id===id);if(!item)throw Error('家具已删除');
+    item.modelData=data;item.width=+size.x.toFixed(4);
+    item.height=+size.y.toFixed(4);item.depth=+size.z.toFixed(4);
+  }))notify('GLB 已按原始米制尺寸导入：'+size.x.toFixed(2)+' × '+size.y.toFixed(2)+' × '+size.z.toFixed(2)+' m');
  }catch(err){notify('GLB 导入失败：'+err.message);}
 });
 $('import-file').addEventListener('click',()=>$('file-json').click());
