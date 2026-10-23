@@ -35,3 +35,9 @@ assert.deepEqual(snapPosition([2.16,.07],snapDoc),[2.16,0],'wall centerline proj
 assert.deepEqual(snapPosition([1.26,1.64],snapDoc),[1.3,1.6],'metric grid fallback');
 assert.deepEqual(snapPosition([.11,.01],snapDoc,.1,{excludePoint:[0,0],excludeWallId:'a'}),[.1,0],'dragged endpoint does not stick to itself');
 assert.deepEqual(snapPosition([.13,.11],snapDoc,.1,{disable:true}),[.13,.11],'Alt allows free placement');
+
+const crossing={walls:[
+ {id:'horizontal',a:[-2,.35],b:[2,.35]},
+ {id:'vertical',a:[.65,-2],b:[.65,2]}
+]};
+assert.deepEqual(snapPosition([.76,.46],crossing),[.65,.35],'wall crossing intersection snap');
