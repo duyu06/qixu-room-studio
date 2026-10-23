@@ -169,6 +169,7 @@ export function validateProject(doc){
   if(!Array.isArray(doc.furniture)||doc.furniture.length>500||
      !doc.furniture.every(f=>FURNITURE[f.type]&&[f.x,f.z,f.width,f.depth,f.height,f.rotation].every(Number.isFinite)&&
        f.width>.1&&f.depth>.1&&f.height>.005&&f.width<20&&f.depth<20))return '家具数据错误';
+  if(doc.furniture.some(f=>f.modelData!==undefined&&(typeof f.modelData!=='string'||f.modelData.length>2800000||!/^data:model\/gltf-binary;base64,/.test(f.modelData))))return 'GLB 模型数据不合法';
   if(doc.reference!==null&&doc.reference!==undefined&&
     (typeof doc.reference!=='string'||doc.reference.length>12_000_000||
       !/^data:image\/(png|jpeg|webp);base64,/.test(doc.reference)))return '底图格式错误';
