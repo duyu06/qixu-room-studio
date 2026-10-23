@@ -116,7 +116,11 @@
     <div class="panel-top"><small>SPACE INSIGHTS</small><h2>空间分析</h2>
       <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
     <h3>室内气流模拟</h3>
-    <label class="field"><input id="airflow-toggle" type="checkbox"> 显示流动粒子（连接门窗开口）</label>
+    <label class="field"><input id="airflow-toggle" type="checkbox"> 显示全屋气流粒子</label>
+    <label class="field">风从哪里出现 <select id="airflow-source"><option value="opening">默认进风门窗</option><option value="custom">自定义室内位置</option></select></label>
+    <div class="props-grid"><label class="field">风源 X（米）<input id="airflow-source-x" type="number" step="0.1" value="0"></label>
+    <label class="field">风源 Z（米）<input id="airflow-source-z" type="number" step="0.1" value="0"></label></div>
+    <label class="field">覆盖范围 <input id="airflow-spread" type="range" min="0.2" max="3" step="0.2" value="1.5"></label>
     <label class="field">进出风压差（Pa，输入假设值）<input id="flow-pressure" type="number" min="0" max="100" step="0.5" value="5"></label>
     <label class="field">进风口开度（%）<input id="flow-inlet" type="range" min="0" max="100" value="100"></label>
     <label class="field">出风口开度（%）<input id="flow-outlet" type="range" min="0" max="100" value="100"></label>
