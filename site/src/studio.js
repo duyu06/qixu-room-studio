@@ -697,6 +697,18 @@ document.addEventListener('keydown',e=>{
    change(()=>{const f=doc.furniture.find(f=>f.id===selection.id);if(f)f.rotation=Math.atan2(Math.sin(f.rotation+angle),Math.cos(f.rotation+angle));});
    return;
  }
+ if(selection?.kind==='furniture'&&!cmd&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+   e.preventDefault();
+   const step=e.shiftKey?.1:.01;
+   const dx=e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0;
+   const dz=e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0;
+   change(()=>{const f=doc.furniture.find(f=>f.id===selection.id);
+     if(!f)throw Error('家具不存在');
+     f.x=clamp(Number((f.x+dx).toFixed(3)),-doc.width/2+f.width/2,doc.width/2-f.width/2);
+     f.z=clamp(Number((f.z+dz).toFixed(3)),-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
+   });
+   return;
+ }
  const keys={v:'select',w:'wall',d:'door',g:'window'},mode=keys[e.key.toLowerCase()];
  if(mode)toolMode(mode);
 });
