@@ -126,3 +126,27 @@ test('moving furniture updates 3D objects without rebuilding static room geometr
  expect(Number(await count())).toBe(initial);
  expect(Number(await page.locator('#three-viewport').getAttribute('data-furniture-updates'))).toBeGreaterThan(0);
 });
+
+test('2D furniture rotation handle rotates and persists into 3D',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ const furniture=page.locator('[data-furniture-id]').first();
+ await expect(furniture).toBeVisible();
+ await furniture.click();
+ const handle=page.locator('[data-rotate-id]').first();
+ await expect(handle).toBeVisible();
+ const before=Number(await page.locator('[data-prop="angle"]').inputValue());
+ const bb=await handle.boundingBox();
+ expect(bb).toBeTruthy();
+ await page.mouse.move(bb.x+bb.width/2,bb.y+bb.height/2);
+ await page.mouse.down();
+ await page.mouse.move(bb.x+bb.width/2+80,bb.y+bb.height/2+30,{steps:7});
+ await page.mouse.up();
+ const after=Number(await page.locator('[data-prop="angle"]').inputValue());
+ expect(after).not.toBe(before);
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.reload();
+ await page.locator('[data-view="2d"]').click();
+ await page.locator('[data-furniture-id]').first().click();
+ expect(Number(await page.locator('[data-prop="angle"]').inputValue())).toBeCloseTo(after,0);
+});
