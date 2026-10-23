@@ -20,6 +20,7 @@ const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
+let lastSceneKey=null,sceneRebuilds=0;
 let touring=false,walkYaw=0,walkPitch=0,mouseTurn=null,lastFrame=0;
 const walkPressed=new Set();
 const copy=()=>structuredClone(doc);
@@ -443,6 +444,12 @@ function disposeGroup(group){
 }
 function renderThree(){
  if(!ready)return;
+ // Preserve GPU geometry, textures and materials when only UI/selection/lighting changed.
+ const sceneKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.wallColor,doc.reference,doc.walls,doc.openings,doc.furniture,demoXray]);
+ if(sceneKey===lastSceneKey)return;
+ lastSceneKey=sceneKey;
+ sceneRebuilds++;
+ $('three-viewport').dataset.sceneRebuilds=String(sceneRebuilds);
  while(content.children.length){
   const child=content.children[0];content.remove(child);disposeGroup(child);
  }
