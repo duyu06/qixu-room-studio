@@ -283,3 +283,20 @@ test('CFD STL export downloads actual 3D obstacle geometry',async({page})=>{
  expect(download.suggestedFilename()).toBe('qixu-obstacles.stl');
  await expect(page.locator('#cfd-result-status')).toContainText('流体域网格');
 });
+
+test('selected furniture offers precise 90 degree rotation and keyboard duplication',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-furniture-id] rect').last().click();
+ const angle=page.locator('[data-prop="angle"]');
+ const original=Number(await angle.inputValue());
+ await page.locator('[data-rotate-right]').click();
+ let current=Number(await angle.inputValue());
+ const expected=(original+90+180)%360-180;
+ expect(Math.abs(current-expected)).toBeLessThan(1);
+ const before=await page.locator('[data-furniture-id]').count();
+ await page.locator('#plan-svg').press('Control+d');
+ await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
+ await page.reload();
+ await page.locator('[data-view="2d"]').click();
+ await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
+});
