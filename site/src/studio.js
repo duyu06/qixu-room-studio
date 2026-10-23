@@ -201,7 +201,7 @@ svg.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=screenPoint(e);if(!p)return;
  if(tool==='wall'){
-  const q=snapPosition(p,doc);
+  const q=snapPosition(p,doc,.1,{disable:e.altKey});
   if(anchor){const a=anchor;anchor=null;change(()=>{const w=addWall(doc,a,q);selection={kind:'wall',id:w.id};});}
   else {anchor=q;current=q;draw();stat('已选择起点，点击第二点完成墙体');}
   e.preventDefault();return;
@@ -241,17 +241,17 @@ svg.addEventListener('pointermove',e=>{
  if(drag.type==='endpoint'){
    const w=doc.walls.find(x=>x.id===drag.id);if(!w)return;
    const previous=[...w[drag.side]];
-   const snapped=snapPosition(next,doc);
+   const snapped=snapPosition(next,doc,.1,{excludePoint:drag.from,excludeWallId:drag.id,disable:e.altKey});
    for(const segment of doc.walls){
      for(const side of ['a','b']){
        if(Math.hypot(segment[side][0]-previous[0],segment[side][1]-previous[1])<.011)
          segment[side]=[...snapped];
      }
    }
-   drag.moved=true;draw();e.preventDefault();return;
+   drag.moved=true;draw();stat(e.altKey?'自由拖动（Alt 暂停吸附）':'墙端点已按端点／墙线／网格吸附');e.preventDefault();return;
  }
  const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
- const point=snapPosition(next,doc);
+ const point=snapPosition(next,doc,.1,{disable:e.altKey});
  f.x=clamp(point[0],-doc.width/2+f.width/2,doc.width/2-f.width/2);
  f.z=clamp(point[1],-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
  drag.moved=true;draw();e.preventDefault();
