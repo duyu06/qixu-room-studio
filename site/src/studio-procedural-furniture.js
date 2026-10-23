@@ -30,6 +30,7 @@ export function createProceduralFurniture(item){
    for(const x of [-w*.44,w*.44])part(group,w*.10,h*.52,d*.75,x,h*.53,0,'#607d72',.045);
    for(const x of [-w*.26,w*.26])
     part(group,w*.39,h*.17,d*.59,x,h*.55,d*.06,'#9db2a5',.07);
+   for(const x of [-w*.25,w*.25])part(group,w*.32,h*.21,d*.14,x,h*.80,-d*.25,'#a4b9ae',.055);
    legs(h*.17,w*.15,d*.16,.055);
    break;
   }
@@ -40,11 +41,13 @@ export function createProceduralFurniture(item){
    part(group,w*.89,h*.075,d*.42,0,h*.62,d*.24,'#b6baad',.045);
    for(const x of [-w*.24,w*.24])
     part(group,w*.38,h*.11,d*.17,x,h*.67,-d*.31,'#ffffff',.045);
+   part(group,w*.92,h*.045,d*.29,0,h*.59,d*.25,'#e2d9cc',.035);
    break;
   }
   case 'table':{
    legs(h*.89,w*.16,d*.18,.08);
-   part(group,w,h*.11,d,0,h*.94,0,'#d2b58e',.055);break;
+   part(group,w,h*.11,d,0,h*.94,0,'#d2b58e',.055);
+   part(group,w*.91,h*.018,d*.88,0,h*.996,0,'#e2c69e',.01);break;
   }
   case 'chair':{
    legs(h*.53,w*.16,d*.16,.052);
@@ -57,6 +60,8 @@ export function createProceduralFurniture(item){
    part(group,w*.47,h*.8,.02,w*.24,h*.55,d*.501,'#bea084',.015);
    part(group,.025,.13,.022,-w*.06,h*.55,d*.53,'#d8c69e',.004);
    part(group,.025,.13,.022,w*.06,h*.55,d*.53,'#d8c69e',.004);
+   part(group,w*.92,h*.035,d*.87,0,h*.97,0,'#dbcaaf',.012);
+   part(group,w*.9,h*.08,d*.91,0,h*.065,0,'#786958',.012);
    break;
   }
   case 'desk':{
