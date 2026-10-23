@@ -356,3 +356,25 @@ test('wind placement can be cancelled without changing project data',async({page
  await expect(page.locator('#place-wind-source')).toHaveAttribute('aria-pressed','false');
  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBe(before);
 });
+
+test('2D and docked 3D preview remain live side by side during furniture edits',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#canvas-wrap')).toHaveClass(/dual-view/);
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ const before=Number(await page.locator('#three-viewport').getAttribute('data-furniture-updates')||0);
+ await page.locator('[data-furniture-id] rect').last().click();
+ const x=page.locator('[data-prop="x"]');
+ const initial=Number(await x.inputValue());
+ await x.fill(String(initial+.2));await x.dispatchEvent('change');
+ await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-furniture-updates'))).toBeGreaterThan(before);
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await page.locator('#dock-expand').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect(page.locator('#plan-svg')).toBeHidden();
+ await page.locator('[data-view="split"]').click();
+ await page.locator('#dock-close').click();
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await expect(page.locator('#three-viewport')).toBeHidden();
+});
