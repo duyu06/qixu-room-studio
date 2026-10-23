@@ -79,6 +79,7 @@ function refresh(){
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  draw();inspect();if(ready){renderThree();window.qixuSetLighting?.(doc.lightingMode||'day');}
  $('texture-repeat').value=doc.textureRepeat??3;
+ $('airflow-source').value=doc.airflowSource||'opening';$('airflow-source-x').value=doc.airflowX??0;$('airflow-source-z').value=doc.airflowZ??0;$('airflow-spread').value=doc.airflowSpread??1.5;
  $('flow-pressure').value=doc.flowPressurePa??5;$('flow-inlet').value=(doc.flowInlet??1)*100;$('flow-outlet').value=(doc.flowOutlet??1)*100;
  showFlowEstimate();save();
 }
@@ -358,7 +359,7 @@ $('airflow-toggle').addEventListener('change',e=>{
  if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  if(airflowEnabled){
    if(view!=='3d')setView('3d');
-   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
+   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45)),sourcePoint:doc.airflowSource==='custom'?[doc.airflowX??0,doc.airflowZ??0]:null,spread:doc.airflowSpread??1.5});scene.add(airflowOverlay.group);}
    $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
    stat(airflowOverlay?.available?'气流粒子预览：门窗间示意路径（非 CFD）':'请添加至少两个门窗开口用于气流示意');
  }else{ $('three-viewport').dataset.airflowActive='false';stat('已关闭气流示意');}
@@ -396,7 +397,7 @@ function showFlowEstimate(){
 }
 function resetFlowOverlay(){
  if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
- if(airflowEnabled&&ready){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
+ if(airflowEnabled&&ready){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45)),sourcePoint:doc.airflowSource==='custom'?[doc.airflowX??0,doc.airflowZ??0]:null,spread:doc.airflowSpread??1.5});scene.add(airflowOverlay.group);}
  $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
 }
 for(const [id,key,scale] of [['flow-pressure','flowPressurePa',1],['flow-inlet','flowInlet',.01],['flow-outlet','flowOutlet',.01]]){
@@ -424,6 +425,9 @@ $('texture-file').addEventListener('change',e=>{
  reader.onerror=()=>notify('材质贴图读取失败');
  reader.readAsDataURL(file);
 });
+for(const [id,key,transform] of [['airflow-source','airflowSource',v=>v],['airflow-source-x','airflowX',Number],['airflow-source-z','airflowZ',Number],['airflow-spread','airflowSpread',Number]]){
+ $(id).addEventListener('change',e=>{change(()=>doc[key]=transform(e.target.value));resetFlowOverlay();});
+}
 $('airflow-speed').addEventListener('input',e=>{airflowSpeed=Number(e.target.value);});
 $('camera-pan').addEventListener('click',()=>{
  if(view!=='3d')setView('3d');
@@ -751,7 +755,7 @@ function renderThree(){
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
  grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
- if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
+ if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45)),sourcePoint:doc.airflowSource==='custom'?[doc.airflowX??0,doc.airflowZ??0]:null,spread:doc.airflowSpread??1.5});scene.add(airflowOverlay.group);}
  $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
 }
 function initThree(){
