@@ -8,7 +8,7 @@ const fixture=async page=>page.evaluate(()=>{
  return c.toDataURL('image/png').split(',')[1];
 });
 async function startPlan(page){
- await page.goto('/');
+ await page.goto('/?legacy=1');
  await expect(page.locator('#viewport canvas')).toBeVisible({timeout:23000});
  const image=await fixture(page);
  await page.locator('#photo-input').setInputFiles({name:'qa-plan.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});
@@ -56,7 +56,7 @@ test('@data broken project image preserves previous project',async({page})=>{
  expect(saved).toEqual(old);
 });
 test('@data corrupt local backup gives safe recovery on WebGPU page',async({page})=>{
- await page.goto('/');
+ await page.goto('/?legacy=1');
  await page.evaluate(()=>localStorage.setItem('qixu-blueprint-v6','{broken'));
  await page.goto('/photoreal.html');
  await expect(page.locator('#overlay')).toContainText('损坏');
@@ -87,7 +87,7 @@ test('@science door placement persists after model recomputation',async({page})=
  expect(Number.isFinite(stored.plan.ventilation?.window?.z)).toBe(true);
 });
 test('@science unsupported WebGPU explains fallback without blank page',async({page})=>{
- await page.goto('/');
+ await page.goto('/?legacy=1');
  await page.evaluate(()=>localStorage.setItem('qixu-blueprint-v6',JSON.stringify({
    plan:{w:8,d:6,crop:{left:0,top:0,right:500,bottom:500},walls:[[0,0,500,0]],furniture:[]},
    image:'data:image/png;base64,aGVsbG8='
