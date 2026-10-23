@@ -113,7 +113,7 @@ test('moving furniture updates 3D objects without rebuilding static room geometr
  const count=()=>page.locator('#three-viewport').getAttribute('data-scene-rebuilds');
  const initial=Number(await count());
  await page.locator('[data-view="2d"]').click();
- const furniture=page.locator('[data-furniture-id] rect').first();
+ const furniture=page.locator('[data-furniture-id] rect').last();
  await expect(furniture).toBeVisible();
  await furniture.click();
  const x=page.locator('[data-prop="x"]');
@@ -129,7 +129,7 @@ test('moving furniture updates 3D objects without rebuilding static room geometr
 
 test('2D furniture rotation handle rotates and persists into 3D',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=2d');
- const furniture=page.locator('[data-furniture-id] rect').first();
+ const furniture=page.locator('[data-furniture-id] rect').last();
  await expect(furniture).toBeVisible();
  await furniture.click();
  const handle=page.locator('[data-rotate-id]').first();
@@ -147,7 +147,7 @@ test('2D furniture rotation handle rotates and persists into 3D',async({page})=>
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await page.reload();
  await page.locator('[data-view="2d"]').click();
- await page.locator('[data-furniture-id] rect').first().click();
+ await page.locator('[data-furniture-id] rect').last().click();
  expect(Number(await page.locator('[data-prop="angle"]').inputValue())).toBeCloseTo(after,0);
 });
 
@@ -167,7 +167,7 @@ test('P1 self-contained GLB imports as real geometry and persists on reload',asy
  binHeader.writeUInt32LE(pos.length,0);binHeader.writeUInt32LE(0x004e4942,4);
  const glb=Buffer.concat([head,jsonHeader,chunk,binHeader,pos]);
  await page.goto('/studio.html?template=sunlit&view=2d');
- await page.locator('[data-furniture-id] rect').first().click();
+ await page.locator('[data-furniture-id] rect').last().click();
  await page.locator('[data-panel="library"]').click();
  await page.locator('#file-glb').setInputFiles({name:'triangle.glb',mimeType:'model/gltf-binary',buffer:glb});
  await expect(page.locator('#status-text')).not.toContainText('GLB 导入失败');
