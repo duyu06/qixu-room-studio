@@ -35,6 +35,7 @@
    <button class="rail-tab active" data-panel="structure"><b>▦</b><span>户型</span></button>
    <button class="rail-tab" data-panel="library"><b>▣</b><span>家具</span></button>
    <button class="rail-tab" data-panel="materials"><b>◧</b><span>材质</span></button>
+   <button class="rail-tab" data-panel="simulation"><b>≋</b><span>模拟</span></button>
    <button class="rail-tab" data-panel="analysis"><b>◉</b><span>分析</span></button>
    <button class="rail-tab" data-panel="render"><b>☼</b><span>渲染</span></button>
    <div class="rail-spacer"></div>
@@ -112,9 +113,10 @@
       <button data-wall-color="#d1c7be" style="--sw:#d1c7be" title="岩灰"></button>
     </div>
    </div>
-   <div class="panel-section" data-sidebar="analysis" hidden>
-    <div class="panel-top"><small>SPACE INSIGHTS</small><h2>空间分析</h2>
-      <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
+   <div class="panel-section" data-sidebar="simulation" hidden>
+    <div class="panel-top"><small>SIMULATION LAB</small><h2>环境模拟</h2><p>统一配置气流起点、扩散和门窗边界；在 2D 放置，在 3D 观察。</p></div>
+    <div class="action-grid"><button id="place-wind-source" type="button" aria-pressed="false">＋ 在户型图放置风源</button><button id="preview-wind-3d" type="button">▶ 3D 预览</button><button id="cancel-wind-source" type="button" hidden>取消放置</button></div>
+    <p id="wind-placement-hint" class="hint" role="status">选择「放置风源」，在 2D 户型图中点击任意室内位置。</p>
     <h3>室内气流模拟</h3>
     <label class="field"><input id="airflow-toggle" type="checkbox"> 显示全屋气流粒子</label>
     <label class="field">风从哪里出现 <select id="airflow-source"><option value="opening">默认进风门窗</option><option value="custom">自定义室内位置</option></select></label>
@@ -130,10 +132,14 @@
     <p id="cfd-result-status" class="hint" role="status">这里只导出求解器输入，不生成真实 CFD 结果。</p></details>
     <label class="field">动画速度 <input id="airflow-speed" type="range" min="0.2" max="3" step="0.2" value="1"></label>
     <p class="hint">粒子路径是通风概念示意，不提供风速、压力、涡流或 CFD 结果。</p>
+   </div>
+   <div class="panel-section" data-sidebar="analysis" hidden>
+    <div class="panel-top"><small>SPACE INSIGHTS</small><h2>空间分析</h2>
+      <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
     <div id="studio-analysis-result" class="unified-analysis-result" role="status">切换到分析后计算当前空间…</div>
     <div class="action-grid"><button id="analysis-refresh" type="button">↻ 更新分析</button>
       <button id="analysis-show-3d" type="button">查看当前 3D</button></div>
-    <p class="hint">通风是二维连通与进出口示意，不是 CFD；采光为几何推断，不是实测照度。风水仅提供传统文化方位参考。</p>
+    <p class="hint">通风设置和动画已统一移入「模拟」模块。采光为几何推断，风水仅提供传统文化方位参考。</p>
    </div>
    <div class="panel-section" data-sidebar="render" hidden>
     <div class="panel-top"><small>RENDER STUDIO</small><h2>渲染预览</h2>
