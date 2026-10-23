@@ -1,7 +1,7 @@
 import {airflowRoute} from './studio-airflow-path.js';
 import * as THREE from 'three';
 // Educational airflow streamlines only. NOT Navier-Stokes/CFD velocity predictions.
-export function makeAirflowOverlay(doc,{count=48,openings={}}={}){
+export function makeAirflowOverlay(doc,{count=48,openings={},flowScale=1}={}){
  const group=new THREE.Group();group.name='airflow-preview';
  const route=airflowRoute(doc,{furniture:true,openingFractions:openings});
  if(!route||route.length<2)return {group,update:()=>{},available:false};
@@ -22,7 +22,7 @@ export function makeAirflowOverlay(doc,{count=48,openings={}}={}){
  const particles=new THREE.Points(geometry,material);particles.frustumCulled=false;group.add(particles);
  const update=(time,speed=1)=>{
    for(let i=0;i<count;i++){
-     const t=(phases[i]+time*speed*.00006)%1,j=i*3;
+     const t=(phases[i]+time*speed*Math.max(0,flowScale)*.00006)%1,j=i*3;
      const [x,z]=sample(t);
      points[j]=x+noise(i)*.045;
      points[j+1]=.7+((i%7)/7)*1.2;
@@ -31,5 +31,5 @@ export function makeAirflowOverlay(doc,{count=48,openings={}}={}){
    geometry.attributes.position.needsUpdate=true;
  };
  update(0);
- return {group,update,available:true};
+ return {group,update,available:true,flowScale};
 }
