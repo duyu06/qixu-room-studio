@@ -73,3 +73,18 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
  .canvas.dual-view .compass{right:18px}
  .canvas.dual-view .canvas-help{left:50%;max-width:90%;bottom:44%}
 }
+
+.canvas.dual-view{--dock-width:36%}
+.canvas.dual-view #plan-svg{flex:1 1 auto;width:calc(100% - var(--dock-width));}
+.canvas.dual-view #three-viewport{flex:0 0 var(--dock-width);width:var(--dock-width)}
+.canvas.dual-view #split-resizer{display:block!important;flex:0 0 8px;z-index:5;cursor:col-resize;background:#d8e4dd;touch-action:none;position:relative}
+.canvas.dual-view #split-resizer::after{content:"⋮";position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#567367}
+.canvas.dual-view .compass{right:calc(var(--dock-width) + 22px)}
+.canvas.dual-view .canvas-help{left:calc((100% - var(--dock-width))/2)}
+@media(max-width:960px){
+ .canvas.dual-view #plan-svg{width:100%;flex:1 1 58%;height:58%}
+ .canvas.dual-view #three-viewport{width:100%;flex:1 1 42%;height:42%}
+ .canvas.dual-view #split-resizer{height:8px;flex:0 0 8px;cursor:row-resize}
+ .canvas.dual-view .compass{right:18px}
+ .canvas.dual-view .canvas-help{left:50%}
+}
