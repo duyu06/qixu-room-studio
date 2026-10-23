@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
+import {makeAirflowOverlay} from './studio-airflow.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -23,6 +24,7 @@ let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
 const furnitureMeshes=new Map();
+let airflowOverlay=null,airflowEnabled=false,airflowSpeed=1;
 const glbLoader=new GLTFLoader();
 let sceneEpoch=0;
 function attachGlb(entry,item){
@@ -338,6 +340,16 @@ function updateCameraTool(){
  if(orbit)orbit.mouseButtons.LEFT=panTool?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
  if(orbit)orbit.touches.ONE=panTool?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
 }
+$('airflow-toggle').addEventListener('change',e=>{
+ airflowEnabled=e.target.checked;
+ if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
+ if(airflowEnabled){
+   if(view!=='3d')setView('3d');
+   if(ready){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
+   stat(airflowOverlay?.available?'气流粒子预览：门窗间示意路径（非 CFD）':'请添加至少两个门窗开口用于气流示意');
+ }else stat('已关闭气流示意');
+});
+$('airflow-speed').addEventListener('input',e=>{airflowSpeed=Number(e.target.value);});
 $('camera-pan').addEventListener('click',()=>{
  if(view!=='3d')setView('3d');
  if(view!=='3d'||touring)return;
@@ -588,6 +600,7 @@ function renderThree(){
  while(content.children.length){
   const child=content.children[0];content.remove(child);disposeGroup(child);
  }
+ if(airflowOverlay){scene.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(doc.width,doc.depth),
    floorMaterial(doc.floor));
  floor.rotation.x=-Math.PI/2;floor.position.y=.02;floor.receiveShadow=true;content.add(floor);
@@ -643,6 +656,7 @@ function renderThree(){
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
  grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
+ if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
 }
 function initThree(){
  if(ready)return;
@@ -707,6 +721,7 @@ function initThree(){
    requestAnimationFrame(frame);if(view!=='3d')return;
    const dt=Math.min(.055,Math.max(0,(time-lastFrame)/1000));lastFrame=time;
    if(touring)walkFrame(dt);else orbit.update();
+   if(airflowEnabled)airflowOverlay?.update(time,airflowSpeed);
    renderer.render(scene,camera);
  }
  frame();
