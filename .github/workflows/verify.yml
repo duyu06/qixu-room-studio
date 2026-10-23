@@ -36,3 +36,4 @@ jobs:
           node tests/studio-airflow-path.test.mjs
           node tests/studio-flow-model.test.mjs
           node tests/studio-cfd-job.test.mjs
+          node tests/studio-cfd-stl.test.mjs
