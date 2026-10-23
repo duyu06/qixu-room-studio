@@ -571,8 +571,18 @@ function setView(name){
  $('mode-description').textContent=name==='2d'?'平面编辑 · 网格吸附':'3D 预览 · 拖动旋转 / 滚轮缩放';
  if(name==='3d'){
   try{initThree();renderThree();}
-  catch(e){console.error(e);view='2d';svg.hidden=false;$('three-viewport').hidden=true;
-    notify('浏览器 3D 渲染初始化失败：'+e.message);}
+  catch(e){
+    console.error('3D rendering failed',e);
+    view='2d';ready=false;
+    svg.hidden=false;$('three-viewport').hidden=true;
+    document.querySelectorAll('[data-view]').forEach(b=>{
+      b.classList.toggle('active',b.dataset.view==='2d');
+      b.setAttribute('aria-pressed',String(b.dataset.view==='2d'));
+    });
+    $('mode-description').textContent='3D 加载失败 · 已恢复 2D';
+    stat('3D 无法启动：'+e.message);
+    notify('3D 无法启动，请检查浏览器 WebGL 设置：'+e.message);
+  }
  }
 }
 try{
