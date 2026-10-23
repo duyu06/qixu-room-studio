@@ -77,6 +77,9 @@
     <div class="panel-top"><small>FURNITURE</small><h2>家具素材库</h2><p>选择家具后在画布中拖动、旋转和调整尺寸。</p></div>
     <label class="search-label">搜索家具<input id="model-search" type="search" placeholder="床、沙发、柜子…"></label>
     <div id="furniture-library" class="library-grid"></div>
+    <button type="button" id="import-glb" title="选择家具后上传嵌入式 GLB 模型">↑ 导入家具 GLB</button>
+    <input type="file" id="file-glb" accept=".glb,model/gltf-binary" hidden>
+    <p class="hint">先选中一件家具，再上传不超过 2MB 的自包含 GLB；文件保存在此项目中。外链依赖和大型模型暂不支持。</p>
     <p class="hint">当前是用于空间规划的简化 3D 参数化模型，不是品牌授权的真实商品模型。</p>
    </div>
    <div class="panel-section" data-sidebar="materials" hidden>
