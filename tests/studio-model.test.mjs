@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createProject,validateProject,addWall,addOpening,wallPieces,
- setOpeningDimension,deleteObject,addFurniture,importLegacy} from '../site/src/studio-model.js';
+ setOpeningDimension,deleteObject,addFurniture,importLegacy,snapPosition} from '../site/src/studio-model.js';
 const d=createProject();
 assert.equal(validateProject(d),null);
 const center=d.walls[4];
@@ -25,3 +25,13 @@ assert.equal(migrated.walls[0].a[0],-5);
 assert.equal(migrated.walls[0].b[0],5);
 assert.equal(validateProject(migrated),null);
 console.log('Professional studio wall openings, furniture and migration validated');
+
+const snapDoc={walls:[
+ {id:'a',a:[0,0],b:[4,0]},
+ {id:'b',a:[3,1],b:[3,4]}
+]};
+assert.deepEqual(snapPosition([.13,.11],snapDoc),[0,0],'endpoint priority');
+assert.deepEqual(snapPosition([2.16,.07],snapDoc),[2.16,0],'wall centerline projection');
+assert.deepEqual(snapPosition([1.26,1.64],snapDoc),[1.3,1.6],'metric grid fallback');
+assert.deepEqual(snapPosition([.11,.01],snapDoc,.1,{excludePoint:[0,0],excludeWallId:'a'}),[.1,0],'dragged endpoint does not stick to itself');
+assert.deepEqual(snapPosition([.13,.11],snapDoc,.1,{disable:true}),[.13,.11],'Alt allows free placement');
