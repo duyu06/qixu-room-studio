@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {createProject} from '../site/src/studio-model.js';
+import {cfdSurfaceStl} from '../site/src/studio-cfd-stl.js';
+const doc=createProject();
+const data=cfdSurfaceStl(doc);
+const header=new DataView(data);
+const triangles=header.getUint32(80,true);
+assert.ok(triangles>12,'walls and openings should yield multiple mesh boxes');
+assert.equal(data.byteLength,84+triangles*50);
+const empty=createProject();empty.walls=[];empty.openings=[];empty.furniture=[];
+assert.equal(new DataView(cfdSurfaceStl(empty)).getUint32(80,true),0);
+doc.furniture.push({id:'f1',type:'table',x:0,z:0,width:1,depth:.6,height:.8,rotation:Math.PI/4});
+assert.equal(new DataView(cfdSurfaceStl(doc)).getUint32(80,true),triangles+12);
+console.log('CFD obstacle STL triangle counts and binary bounds passed');
