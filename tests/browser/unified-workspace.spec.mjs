@@ -90,3 +90,19 @@ test('lighting mode and surfaces survive 2D/3D and full reload',async({page})=>{
  expect(project.lightingMode).toBe('evening');
  expect(project.floor).toBe('#bda58a');
 });
+
+test('3D geometry cache prevents rebuild for view switching and light edits',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ const count=()=>page.locator('#three-viewport').getAttribute('data-scene-rebuilds');
+ const before=Number(await count());
+ expect(before).toBeGreaterThan(0);
+ await page.locator('[data-view="2d"]').click();
+ await page.locator('[data-view="3d"]').click();
+ expect(Number(await count())).toBe(before);
+ await page.locator('[data-panel="materials"]').click();
+ await page.locator('[data-lighting="evening"]').click();
+ expect(Number(await count())).toBe(before);
+ await page.locator('[data-floor="#bda58a"]').click();
+ expect(Number(await count())).toBeGreaterThan(before);
+});
