@@ -86,7 +86,7 @@ export function parseDxf(text,unit='auto',{layers=null}={}){
   const minX=Math.min(...coords.map(p=>p[0])),maxX=Math.max(...coords.map(p=>p[0]));
   const minY=Math.min(...coords.map(p=>p[1])),maxY=Math.max(...coords.map(p=>p[1]));
   const width=maxX-minX,depth=maxY-minY;
-  if(width<.25||depth<.25||width>98||depth>98)throw Error('DXF 范围超出当前支持的 0.25–98 米，请检查所选单位');
+  if(Math.max(width,depth)<.25||width>98||depth>98)throw Error('DXF 范围超出当前支持的 0.25–98 米，请检查所选单位');
   const doc=createProject();doc.title='导入的 DXF 户型';
   doc.width=Math.max(3,Math.ceil((width+1.5)*10)/10);
   doc.depth=Math.max(3,Math.ceil((depth+1.5)*10)/10);
