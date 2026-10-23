@@ -150,3 +150,31 @@ test('2D furniture rotation handle rotates and persists into 3D',async({page})=>
  await page.locator('[data-furniture-id] rect').first().click();
  expect(Number(await page.locator('[data-prop="angle"]').inputValue())).toBeCloseTo(after,0);
 });
+
+test('P1 self-contained GLB imports as real geometry and persists on reload',async({page})=>{
+ const pos=Buffer.alloc(36),values=[0,0,0,1,0,0,0,1,1];
+ values.forEach((n,i)=>pos.writeFloatLE(n,i*4));
+ const gltf={asset:{version:'2.0'},buffers:[{byteLength:pos.length}],
+  bufferViews:[{buffer:0,byteOffset:0,byteLength:pos.length,target:34962}],
+  accessors:[{bufferView:0,componentType:5126,count:3,type:'VEC3',min:[0,0,0],max:[1,1,1]}],
+  meshes:[{primitives:[{attributes:{POSITION:0},mode:4}]}],nodes:[{mesh:0}],
+  scenes:[{nodes:[0]}],scene:0};
+ const json=Buffer.from(JSON.stringify(gltf));const padding=(4-json.length%4)%4;
+ const chunk=Buffer.concat([json,Buffer.alloc(padding,32)]);
+ const head=Buffer.alloc(12),jsonHeader=Buffer.alloc(8),binHeader=Buffer.alloc(8);
+ head.writeUInt32LE(0x46546c67,0);head.writeUInt32LE(2,4);head.writeUInt32LE(12+8+chunk.length+8+pos.length,8);
+ jsonHeader.writeUInt32LE(chunk.length,0);jsonHeader.writeUInt32LE(0x4e4f534a,4);
+ binHeader.writeUInt32LE(pos.length,0);binHeader.writeUInt32LE(0x004e4942,4);
+ const glb=Buffer.concat([head,jsonHeader,chunk,binHeader,pos]);
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-furniture-id] rect').first().click();
+ await page.locator('[data-panel="library"]').click();
+ await page.locator('#file-glb').setInputFiles({name:'triangle.glb',mimeType:'model/gltf-binary',buffer:glb});
+ await expect(page.locator('#status-text')).not.toContainText('GLB 导入失败');
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
+ await page.reload();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
+});
