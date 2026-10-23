@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {furnitureMaterial} from './studio-materials.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // Procedural furniture is a lightweight, legitimately redistributable placeholder,
@@ -7,7 +8,9 @@ const mat=(color,roughness=.78,metalness=0)=>new THREE.MeshStandardMaterial({col
 function part(parent,w,h,d,x,y,z,color,r=.025){
  if(w<=0||h<=0||d<=0)return;
  const radius=Math.max(.001,Math.min(r,w/3,h/3,d/3));
- const mesh=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,2,radius),mat(color));
+ const fabric=['#789387','#69867b','#607d72','#9db2a5','#a4b9ae','#b6baad','#9cac9d','#f3ede2','#ffffff','#e2d9cc','#d9cab6','#f1e4cb'].includes(color);
+ const metal=['#d8c69e'].includes(color);
+ const mesh=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,2,radius),furnitureMaterial(color,metal?'metal':fabric?'fabric':'wood'));
  mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);
  return mesh;
 }
