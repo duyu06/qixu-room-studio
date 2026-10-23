@@ -9,7 +9,8 @@ function box(vertices,center,dims,yaw){
  const pts=[];
  for(const x of [-wx/2,wx/2])for(const y of [-hy/2,hy/2])for(const z of [-dz/2,dz/2])
   pts.push([cx+x*c+z*s,cy+y,cz-x*s+z*c]);
- for(const f of faces)vertices.push(...f.map(i=>pts[i]));
+ // Outward-facing solid normals are required for robust mesh classification.
+ for(const f of faces)vertices.push(pts[f[0]],pts[f[2]],pts[f[1]]);
 }
 export function cfdSurfaceStl(doc){
  const triangles=[];
