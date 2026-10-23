@@ -20,7 +20,8 @@ const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
-let lastSceneKey=null,sceneRebuilds=0;
+let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
+const furnitureMeshes=new Map();
 let touring=false,walkYaw=0,walkPitch=0,mouseTurn=null,lastFrame=0;
 const walkPressed=new Set();
 const copy=()=>structuredClone(doc);
@@ -445,9 +446,39 @@ function disposeGroup(group){
 function renderThree(){
  if(!ready)return;
  // Preserve GPU geometry, textures and materials when only UI/selection/lighting changed.
- const sceneKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.wallColor,doc.reference,doc.walls,doc.openings,doc.furniture,demoXray]);
+ const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.wallColor,doc.reference,doc.walls,doc.openings,demoXray]);
+ const furnitureKey=JSON.stringify(doc.furniture);
+ const sceneKey=structureKey+'|'+furnitureKey;
  if(sceneKey===lastSceneKey)return;
- lastSceneKey=sceneKey;
+ // Keep all static GPU geometry alive when only furniture changes.
+ if(structureKey===lastStructureKey){
+   const wanted=new Set(doc.furniture.map(f=>f.id));
+   for(const [id,entry] of furnitureMeshes){
+     if(wanted.has(id))continue;
+     content.remove(entry.group);disposeGroup(entry.group);furnitureMeshes.delete(id);
+   }
+   for(const item of doc.furniture){
+     const shapeKey=JSON.stringify([item.type,item.width,item.depth,item.height]);
+     let entry=furnitureMeshes.get(item.id);
+     if(entry&&entry.shapeKey!==shapeKey){
+       content.remove(entry.group);disposeGroup(entry.group);
+       furnitureMeshes.delete(item.id);entry=null;
+     }
+     if(!entry){
+       const group=new THREE.Group();
+       group.userData.selection={kind:'furniture',id:item.id};
+       group.add(createProceduralFurniture(item));content.add(group);
+       entry={group,shapeKey};furnitureMeshes.set(item.id,entry);
+     }
+     entry.group.position.set(item.x,0,item.z);
+     entry.group.rotation.y=-item.rotation;
+   }
+   lastSceneKey=sceneKey;
+   $('three-viewport').dataset.furnitureUpdates=String(Number($('three-viewport').dataset.furnitureUpdates||0)+1);
+   return;
+ }
+ lastSceneKey=sceneKey;lastStructureKey=structureKey;
+ furnitureMeshes.clear();
  sceneRebuilds++;
  $('three-viewport').dataset.sceneRebuilds=String(sceneRebuilds);
  while(content.children.length){
@@ -502,6 +533,7 @@ function renderThree(){
   group.userData.selection={kind:'furniture',id:item.id};
   group.add(createProceduralFurniture(item));
   content.add(group);
+  furnitureMeshes.set(item.id,{group,shapeKey:JSON.stringify([item.type,item.width,item.depth,item.height])});
  }
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
