@@ -865,7 +865,7 @@ function initThree(){
  });
  ready=true;updateCameraTool();fit();renderThree();resize();
  function frame(time){
-   requestAnimationFrame(frame);if(view!=='3d')return;
+   requestAnimationFrame(frame);if(view!=='3d'&&view!=='split')return;
    const dt=Math.min(.055,Math.max(0,(time-lastFrame)/1000));lastFrame=time;
    if(touring)walkFrame(dt);else orbit.update();
    if(airflowEnabled)airflowOverlay?.update(time,airflowSpeed);
@@ -913,6 +913,7 @@ function walkFrame(dt){
  if(canWalkAt(doc,camera.position.x,camera.position.z+dz))camera.position.z+=dz;
 }
 function setView(name){
+ if(!['2d','3d','split'].includes(name))return;
  if(name!=='3d'&&touring){touring=false;walkPressed.clear();if(orbit)orbit.enabled=true;
    $('tour-toggle').classList.remove('active');$('tour-toggle').textContent='🚶 室内漫游';}
  view=name;
@@ -920,13 +921,16 @@ function setView(name){
   b.classList.toggle('active',b.dataset.view===name);
   b.setAttribute('aria-pressed',String(b.dataset.view===name));
  });
- svg.toggleAttribute('hidden',name!=='2d');$('three-viewport').hidden=name!=='3d';
- $('mode-description').textContent=name==='2d'?'平面编辑 · 网格吸附':'3D 预览 · 拖动旋转 / 滚轮缩放';
- if(name==='3d'){
+ $('canvas-wrap').classList.toggle('dual-view',name==='split');
+ svg.toggleAttribute('hidden',name==='3d');$('three-viewport').hidden=name==='2d';
+ $('mode-description').textContent=name==='2d'?'平面编辑 · 网格吸附':name==='split'?
+   '2D 编辑 / 3D 实时同步':'3D 预览 · 拖动旋转 / 滚轮缩放';
+ if(name!=='2d'){
   try{initThree();renderThree();}
   catch(e){
     console.error('3D rendering failed',e);
     view='2d';ready=false;
+    $('canvas-wrap').classList.remove('dual-view');
     svg.removeAttribute('hidden');$('three-viewport').hidden=true;
     document.querySelectorAll('[data-view]').forEach(b=>{
       b.classList.toggle('active',b.dataset.view==='2d');
@@ -938,6 +942,9 @@ function setView(name){
   }
  }
 }
+$('dock-expand').addEventListener('click',()=>setView('3d'));
+$('dock-close').addEventListener('click',()=>setView('2d'));
+
 try{
  const old=JSON.parse(localStorage.getItem(STORE)||'null');
  if(old&&!validateProject(old))doc=old;
