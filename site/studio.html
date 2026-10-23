@@ -153,7 +153,7 @@
    <div class="canvas-header">
      <div class="view-pills" role="group" aria-label="视角">
       <button data-view="2d" class="active" aria-pressed="true">▦ 2D 平面</button>
-      <button data-view="3d" aria-pressed="false">⬡ 3D 立体</button>
+      <button data-view="3d" aria-pressed="false">⬡ 3D 立体</button><button data-view="split" aria-pressed="false" title="2D 编辑与 3D 同屏实时预览">◫ 双视图</button>
      </div>
      <span class="status-detail" id="mode-description">平面编辑 · 网格吸附</span>
      <div class="canvas-action"><button id="fit-view" title="适配整屋">⊞ 适应画布</button><button id="reset-camera" title="恢复斜向三维视角">⟲</button><button id="camera-pan" type="button" aria-pressed="false" title="切换左键拖拽为平移">✋ 平移</button><button id="camera-top" type="button" title="3D 俯视视角">俯视</button><button id="camera-eye" type="button" title="室内人眼高度视角">人眼</button><button id="tour-toggle" type="button" title="进入第一人称室内漫游">🚶 室内漫游</button></div>
@@ -165,7 +165,7 @@
       </pattern></defs>
       <g id="world"></g><g id="preview-layer"></g>
     </svg>
-    <div id="three-viewport" hidden></div>
+    <div id="three-viewport" hidden><div class="three-dock-title">3D 实时预览 <button type="button" id="dock-expand" title="放大 3D 视图">↗ 放大</button><button type="button" id="dock-close" title="关闭预览">×</button></div></div>
     <div id="integrated-preview" hidden><iframe id="integrated-render-frame" title="当前项目 WebGPU 光照预览" loading="lazy"></iframe></div>
     <div class="canvas-help" id="interaction-hint">点选墙体可修改参数；按 W 绘墙，D 添加门，G 添加窗。</div>
     <div class="compass">N <span>↑</span></div>
