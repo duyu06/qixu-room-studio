@@ -524,6 +524,10 @@ document.querySelectorAll('[data-floor-pattern]').forEach(b=>b.addEventListener(
  document.querySelectorAll('[data-floor-pattern]').forEach(x=>x.classList.toggle('active',x===b));
 }));
 document.querySelectorAll('[data-wall-color]').forEach(b=>b.addEventListener('click',()=>change(()=>doc.wallColor=b.dataset.wallColor)));
+document.querySelectorAll('[data-wall-pattern]').forEach(b=>b.addEventListener('click',()=>{
+ change(()=>doc.wallPattern=b.dataset.wallPattern);
+ document.querySelectorAll('[data-wall-pattern]').forEach(x=>x.classList.toggle('active',x===b));
+}));
 function library(search=''){
  const parent=$('furniture-library');parent.replaceChildren();
  Object.entries(FURNITURE).filter(([type,v])=>v.label.includes(search)||type.includes(search.toLowerCase()))
@@ -567,7 +571,7 @@ function disposeGroup(group){
 function renderThree(){
  if(!ready)return;
  // Preserve GPU geometry, textures and materials when only UI/selection/lighting changed.
- const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.wallColor,doc.reference,doc.walls,doc.openings,demoXray]);
+ const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.wallColor,doc.wallPattern,doc.reference,doc.walls,doc.openings,demoXray]);
  const furnitureKey=JSON.stringify(doc.furniture);
  const sceneKey=structureKey+'|'+furnitureKey;
  if(sceneKey===lastSceneKey)return;
@@ -623,8 +627,9 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.93,
-    transparent:fadeWall,opacity:fadeWall?.2:1,depthWrite:!fadeWall,side:THREE.DoubleSide});
+  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint');
+  material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
+  material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   for(const piece of wallPieces(doc,wall)){
    buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,doc.thickness,
      (piece.start+piece.end)/2,(piece.top+piece.bottom)/2,0);
