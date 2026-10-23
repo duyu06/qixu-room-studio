@@ -1,5 +1,5 @@
-// Safe small ASCII DXF LINE/LWPOLYLINE importer, no arbitrary scripts or XREF URLs.
-// Requires an explicit or CAD-recorded unit; rejects unsupported arc/bulge geometry.
+// Safe bounded ASCII DXF line, polyline and tessellated arc importer.
+// Requires an explicit or CAD-recorded unit; no scripts or XREF URLs.
 import {createProject} from './studio-model.js';
 const FACTORS={mm:.001,cm:.01,m:1,inch:.0254,ft:.3048};
 export function parseDxf(text,unit='auto'){
@@ -21,7 +21,7 @@ export function parseDxf(text,unit='auto'){
     if(section!=='ENTITIES')continue;
     if(code==='0'){
       if(current)entities.push(current);
-      current=['LINE','LWPOLYLINE'].includes(value)?{type:value,data:[]}:null;
+      current=['LINE','LWPOLYLINE','ARC'].includes(value)?{type:value,data:[]}:null;
     }else if(current)current.data.push([code,value]);
   }
   if(current)entities.push(current);
@@ -29,23 +29,52 @@ export function parseDxf(text,unit='auto'){
   const resolved=unit==='auto'?unitFromFile:unit;
   if(!resolved||!FACTORS[resolved])throw Error('DXF 没有可识别的图纸单位，请选择毫米、厘米或米后重试');
   const factor=FACTORS[resolved],segments=[];
+  const emit=(a,b,layer)=>{if(a.every(Number.isFinite)&&b.every(Number.isFinite)&&Math.hypot(b[0]-a[0],b[1]-a[1])>1e-8)
+    segments.push([a[0],a[1],b[0],b[1],layer]);};
+  const tessellate=(a,b,bulge,layer)=>{
+   if(!bulge){emit(a,b,layer);return;}
+   const theta=4*Math.atan(bulge),chord=Math.hypot(b[0]-a[0],b[1]-a[1]);
+   if(chord<1e-8)return;
+   const radius=chord/(2*Math.sin(Math.abs(theta)/2));
+   const midpoint=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+   const sign=Math.sign(bulge),offset=chord/(2*Math.tan(theta/2));
+   const center=[midpoint[0]-(b[1]-a[1])/chord*offset,midpoint[1]+(b[0]-a[0])/chord*offset];
+   const startAngle=Math.atan2(a[1]-center[1],a[0]-center[0]);
+   const count=Math.min(128,Math.max(2,Math.ceil(Math.abs(theta)*Math.max(1,radius*factor)/.22)));
+   let prev=a;
+   for(let j=1;j<=count;j++){
+     const angle=startAngle+theta*j/count;
+     const point=j===count?b:[center[0]+radius*Math.cos(angle),center[1]+radius*Math.sin(angle)];
+     emit(prev,point,layer);prev=point;
+   }
+  };
   for(const entity of entities){
-    const d=entity.data;
+    const d=entity.data,layer=d.find(([a])=>a==='8')?.[1]||'0';
     if(entity.type==='LINE'){
       const n=k=>Number(d.find(([a])=>a===k)?.[1]);
-      const coords=[n('10'),n('20'),n('11'),n('21')];
-      if(coords.every(Number.isFinite))segments.push(coords);
+      emit([n('10'),n('20')],[n('11'),n('21')],layer);
+    }else if(entity.type==='ARC'){
+      const n=k=>Number(d.find(([a])=>a===k)?.[1]);
+      const cx=n('10'),cy=n('20'),radius=n('40'),start=n('50')*Math.PI/180,end=n('51')*Math.PI/180;
+      if(![cx,cy,radius,start,end].every(Number.isFinite)||radius<=0)continue;
+      const sweep=((end-start)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+      const steps=Math.min(128,Math.max(2,Math.ceil(sweep*Math.max(1,radius*factor)/.22)));
+      let last=[cx+radius*Math.cos(start),cy+radius*Math.sin(start)];
+      for(let j=1;j<=steps;j++){
+        const t=start+sweep*j/steps,next=[cx+radius*Math.cos(t),cy+radius*Math.sin(t)];
+        emit(last,next,layer);last=next;
+      }
     }else if(entity.type==='LWPOLYLINE'){
       const vertices=[],flag=Number(d.find(([k])=>k==='70')?.[1]||0);
       for(const [code,value]of d){
-        if(code==='42'&&Math.abs(Number(value))>1e-8)throw Error('当前 DXF 导入不支持弧形 bulge 墙线，请在 CAD 中转为直线');
-        if(code==='10')vertices.push([Number(value),NaN]);
-        if(code==='20'&&vertices.length)vertices[vertices.length-1][1]=Number(value);
+        if(code==='10')vertices.push({point:[Number(value),NaN],bulge:0});
+        if(code==='20'&&vertices.length)vertices.at(-1).point[1]=Number(value);
+        if(code==='42'&&vertices.length)vertices.at(-1).bulge=Number(value);
       }
-      for(let i=1;i<vertices.length;i++)if(vertices[i].every(Number.isFinite)&&vertices[i-1].every(Number.isFinite))
-        segments.push([...vertices[i-1],...vertices[i]]);
-      if((flag&1)&&vertices.length>2)segments.push([...vertices.at(-1),...vertices[0]]);
+      for(let i=1;i<vertices.length;i++)tessellate(vertices[i-1].point,vertices[i].point,vertices[i-1].bulge,layer);
+      if((flag&1)&&vertices.length>2)tessellate(vertices.at(-1).point,vertices[0].point,vertices.at(-1).bulge,layer);
     }
+    if(segments.length>650)throw Error('DXF 墙段超过 650，请先清理图层后导入');
   }
   if(segments.length===0)throw Error('没有找到 LINE / LWPOLYLINE 墙线。请选择包含直线墙体的 ASCII DXF');
   if(segments.length>650)throw Error('DXF 墙段超过 650，请先清理图层后导入');
@@ -61,7 +90,7 @@ export function parseDxf(text,unit='auto'){
   const mx=(minX+maxX)/2,my=(minY+maxY)/2;
   doc.walls=segments.filter(s=>Math.hypot((s[2]-s[0])*factor,(s[3]-s[1])*factor)>.15)
     .map(s=>({id:'dxf-'+Math.random().toString(36).slice(2,9),
-      a:[Number((s[0]*factor-mx).toFixed(4)),Number((my-s[1]*factor).toFixed(4))],
+      layer:s[4],a:[Number((s[0]*factor-mx).toFixed(4)),Number((my-s[1]*factor).toFixed(4))],
       b:[Number((s[2]*factor-mx).toFixed(4)),Number((my-s[3]*factor).toFixed(4))]}));
   if(!doc.walls.length)throw Error('有效墙线为空');
   return {project:doc,units:resolved,wallCount:doc.walls.length};
@@ -69,7 +98,7 @@ export function parseDxf(text,unit='auto'){
 export function exportDxf(doc){
   const out=['0','SECTION','2','HEADER','9','$INSUNITS','70','6','0','ENDSEC','0','SECTION','2','ENTITIES'];
   for(const w of doc.walls){
-    out.push('0','LINE','8','QIXU_WALLS','10',String(w.a[0]),'20',String(-w.a[1]),
+    out.push('0','LINE','8',w.layer||'QIXU_WALLS','10',String(w.a[0]),'20',String(-w.a[1]),
       '11',String(w.b[0]),'21',String(-w.b[1]));
   }
   out.push('0','ENDSEC','0','EOF');return out.join('\n')+'\n';
