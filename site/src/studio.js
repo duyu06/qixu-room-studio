@@ -40,6 +40,7 @@ function attachGlb(entry,item){
    root.scale.set(item.width/size.x,item.height/Math.max(size.y,.001),item.depth/size.z);
    root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
    entry.group.clear();entry.group.add(root);entry.externalGlb=true;
+   $('three-viewport').dataset.glbLoaded=String(Number($('three-viewport').dataset.glbLoaded||0)+1);
   },err=>notify('GLB 解析失败：'+err.message));
  }catch(err){notify('GLB 读取失败：'+err.message);}
 }
