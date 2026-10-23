@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
+import {evaluateVentilation} from './studio-flow-model.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -74,7 +75,9 @@ function refresh(){
  if(issues.length)stat('⚠ '+issues.length+' 处家具重叠/墙体碰撞，请检查高亮家具');
  $('geometry-stats').textContent=doc.walls.length+' 段墙 · '+doc.openings.length+' 个门窗 · '+doc.furniture.length+' 件家具';
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
- draw();inspect();if(ready){renderThree();window.qixuSetLighting?.(doc.lightingMode||'day');}save();
+ draw();inspect();if(ready){renderThree();window.qixuSetLighting?.(doc.lightingMode||'day');}
+ $('flow-pressure').value=doc.flowPressurePa??5;$('flow-inlet').value=(doc.flowInlet??1)*100;$('flow-outlet').value=(doc.flowOutlet??1)*100;
+ showFlowEstimate();save();
 }
 function change(fn){
  const old=copy();
@@ -345,10 +348,46 @@ $('airflow-toggle').addEventListener('change',e=>{
  if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  if(airflowEnabled){
    if(view!=='3d')setView('3d');
-   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
+   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc,{openings:Object.fromEntries(doc.openings.filter(o=>o.kind==='door'||o.kind==='window').map((o,i,a)=>[o.id,i===0?(doc.flowInlet??1):i===a.length-1?(doc.flowOutlet??1):1]))});scene.add(airflowOverlay.group);}
    $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
    stat(airflowOverlay?.available?'气流粒子预览：门窗间示意路径（非 CFD）':'请添加至少两个门窗开口用于气流示意');
  }else{ $('three-viewport').dataset.airflowActive='false';stat('已关闭气流示意');}
+});
+
+function flowSettings(){
+ const items=doc.openings.filter(o=>o.kind==='door'||o.kind==='window'),openingFractions={};
+ if(items[0])openingFractions[items[0].id]=doc.flowInlet??1;
+ if(items.length>1)openingFractions[items.at(-1).id]=doc.flowOutlet??1;
+ return {pressurePa:doc.flowPressurePa??5,openings:openingFractions};
+}
+function showFlowEstimate(){
+ const r=evaluateVentilation(doc,flowSettings());
+ $('flow-estimate').textContent=r.available?
+ '孔口近似流量 '+(r.flowM3s*3600).toFixed(1)+' m³/h · 理论 ACH '+r.airChangesPerHour.toFixed(2)+' /h · 家具阻力因子 '+r.lossFactor.toFixed(2)+'。非 CFD / 非实测值':
+ '无有效流量估算：'+r.reason;
+}
+function resetFlowOverlay(){
+ if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
+ if(airflowEnabled&&ready){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings});scene.add(airflowOverlay.group);}
+ $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
+}
+for(const [id,key,scale] of [['flow-pressure','flowPressurePa',1],['flow-inlet','flowInlet',.01],['flow-outlet','flowOutlet',.01]]){
+ $(id).addEventListener('change',e=>{change(()=>{doc[key]=Number(e.target.value)*scale;});resetFlowOverlay();showFlowEstimate();});
+}
+let textureTarget='wall';
+$('texture-wall').addEventListener('click',()=>{textureTarget='wall';$('texture-file').click();});
+$('texture-floor').addEventListener('click',()=>{textureTarget='floor';$('texture-file').click();});
+$('texture-file').addEventListener('change',e=>{
+ const file=e.target.files?.[0];e.target.value='';
+ if(!file)return;
+ if(file.size>1_000_000||!['image/jpeg','image/png','image/webp'].includes(file.type)){notify('只支持 1MB 内 PNG/JPEG/WebP');return;}
+ const reader=new FileReader();
+ reader.onload=()=>{const data=reader.result;
+  change(()=>{doc[textureTarget==='wall'?'wallTexture':'floorTexture']=data;});
+  notify('自定义材质贴图已保存');
+ };
+ reader.onerror=()=>notify('材质贴图读取失败');
+ reader.readAsDataURL(file);
 });
 $('airflow-speed').addEventListener('input',e=>{airflowSpeed=Number(e.target.value);});
 $('camera-pan').addEventListener('click',()=>{
@@ -571,7 +610,7 @@ function disposeGroup(group){
 function renderThree(){
  if(!ready)return;
  // Preserve GPU geometry, textures and materials when only UI/selection/lighting changed.
- const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.wallColor,doc.wallPattern,doc.reference,doc.walls,doc.openings,demoXray]);
+ const structureKey=JSON.stringify([doc.width,doc.depth,doc.thickness,doc.wallHeight,doc.floor,doc.floorPattern,doc.floorTexture?.length,doc.floorTexture?.slice(-50),doc.wallColor,doc.wallPattern,doc.wallTexture?.length,doc.wallTexture?.slice(-50),doc.reference,doc.walls,doc.openings,demoXray]);
  const furnitureKey=JSON.stringify(doc.furniture);
  const sceneKey=structureKey+'|'+furnitureKey;
  if(sceneKey===lastSceneKey)return;
@@ -611,7 +650,7 @@ function renderThree(){
  }
  if(airflowOverlay){scene.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(doc.width,doc.depth),
-   floorMaterial(doc.floor,doc.floorPattern||'auto'));
+   floorMaterial(doc.floor,doc.floorPattern||'auto',doc.floorTexture||null));
  floor.rotation.x=-Math.PI/2;floor.position.y=.02;floor.receiveShadow=true;content.add(floor);
  if(doc.reference){
   const texture=new THREE.TextureLoader().load(doc.reference);
@@ -627,7 +666,7 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint');
+  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   for(const piece of wallPieces(doc,wall)){
