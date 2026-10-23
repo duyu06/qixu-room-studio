@@ -25,3 +25,22 @@ test('single workspace in mobile viewport remains reachable',async({page})=>{
  await page.locator('#render-return').click();
  await expect(page.locator('#integrated-preview')).toBeHidden();
 });
+
+test('3D button must show a real WebGL canvas, not the 2D SVG',async({page})=>{
+ await page.goto('/studio.html?template=sunlit');
+ await page.locator('[data-view="3d"]').click();
+ const selected=await page.locator('[data-view="3d"]').getAttribute('aria-pressed');
+ if(selected==='true'){
+   await expect(page.locator('#plan-svg')).toBeHidden();
+   await expect(page.locator('#three-viewport')).toBeVisible();
+   await expect(page.locator('#three-viewport canvas')).toBeVisible();
+   const pixels=await page.locator('#three-viewport canvas').evaluate(canvas=>{
+     const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');
+     return Boolean(gl&&canvas.width>0&&canvas.height>0);
+   });
+   expect(pixels,'3D mode needs a real WebGL drawing surface').toBeTruthy();
+ }else{
+   await expect(page.locator('[data-view="2d"]')).toHaveAttribute('aria-pressed','true');
+   await expect(page.locator('#status-text')).toContainText('3D 无法启动');
+ }
+});
