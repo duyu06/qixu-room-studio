@@ -171,7 +171,10 @@ test('P1 self-contained GLB imports as real geometry and persists on reload',asy
  await page.locator('[data-furniture-id] rect').last().click();
  await page.locator('[data-panel="library"]').click();
  await page.locator('#file-glb').setInputFiles({name:'triangle.glb',mimeType:'model/gltf-binary',buffer:glb});
- await expect(page.locator('#status-text')).not.toContainText('GLB 导入失败');
+ await expect(page.locator('#toast')).toContainText('按原始米制尺寸导入',{timeout:15000});
+ const bound=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')).furniture.find(f=>f.modelData));
+ expect(bound).toBeTruthy();
+ expect([bound.width,bound.height,bound.depth]).toEqual([1,1,1]);
  await page.locator('[data-view="3d"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
