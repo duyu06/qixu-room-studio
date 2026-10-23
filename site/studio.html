@@ -46,11 +46,12 @@
     <div class="action-grid">
       <button id="new-project">＋ 空白户型</button><button id="load-sample">⌂ 示例户型</button>
       <button id="import-legacy">↳ 读取旧版</button><button id="import-file">↑ 导入项目</button>
-      <button id="load-image">▧ 添加参考底图</button><button id="import-dxf">↗ 导入 DXF 墙线</button>
+      <button id="load-image">▧ 添加参考底图</button><button id="import-dxf">↗ 导入 DXF 墙线</button><button id="import-ifc" type="button">↗ 导入 IFC 墙体</button>
     </div>
     <input type="file" id="file-json" accept=".json,application/json" hidden>
     <input type="file" id="file-image" accept="image/png,image/jpeg,image/webp" hidden>
     <input type="file" id="file-dxf" accept=".dxf,text/plain,application/dxf" hidden>
+    <input type="file" id="file-ifc" accept=".ifc,application/x-step" hidden>
     <label class="search-label studio-unit">DXF 图纸单位
       <select id="dxf-units"><option value="auto">读取 CAD 单位（推荐）</option>
       <option value="mm">毫米 mm</option><option value="cm">厘米 cm</option><option value="m">米 m</option>
