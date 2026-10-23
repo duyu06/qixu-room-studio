@@ -27,7 +27,7 @@ let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
 const furnitureMeshes=new Map();
-let airflowOverlay=null,airflowEnabled=false,airflowSpeed=1;
+let airflowOverlay=null,airflowEnabled=false,airflowSpeed=1,placingWindSource=false;
 const glbLoader=new GLTFLoader();
 let sceneEpoch=0;
 function attachGlb(entry,item){
@@ -96,6 +96,7 @@ function useDoc(next,message){
  doc=structuredClone(next);history=[];future=[];selection=null;anchor=null;zoom=1;refresh();fit();notify(message);
 }
 function toolMode(name){
+ if(placingWindSource)finishWindPlacement(false);
  tool=name;anchor=null;
  document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
  const hints={select:'单击选择，拖动家具；V',wall:'先点起点，再点终点；Esc 取消',door:'点击一段墙添加真实门洞',
@@ -103,6 +104,30 @@ function toolMode(name){
  $('interaction-hint').textContent=hints[name];stat(hints[name]);
  if(view==='3d'&&name!=='select')setView('2d');draw();
 }
+function finishWindPlacement(success=false){
+ placingWindSource=false;
+ svg.classList.remove('placing-wind-source');
+ $('place-wind-source').setAttribute('aria-pressed','false');
+ $('place-wind-source').classList.remove('active');
+ $('cancel-wind-source').hidden=true;
+ $('wind-placement-hint').textContent=success?'风源已设定，可调整参数并点击 3D 预览。':'点击「放置风源」，然后在 2D 户型图中选点。';
+}
+$('place-wind-source').addEventListener('click',()=>{
+ placingWindSource=true;
+ tool='select';anchor=null;drag=null;
+ sidebar('simulation');setView('2d');
+ svg.classList.add('placing-wind-source');
+ $('place-wind-source').setAttribute('aria-pressed','true');
+ $('place-wind-source').classList.add('active');
+ $('cancel-wind-source').hidden=false;
+ $('wind-placement-hint').textContent='放置模式：点击 2D 户型图设定气流起点，Esc 取消。';
+ stat('在 2D 户型图内单击放置风源，Esc 取消');
+});
+$('cancel-wind-source').addEventListener('click',()=>finishWindPlacement(false));
+$('preview-wind-3d').addEventListener('click',()=>{
+ finishWindPlacement(false);sidebar('simulation');setView('3d');
+ if(!$('airflow-toggle').checked)$('airflow-toggle').click();
+});
 function sidebar(name){
  document.querySelectorAll('[data-panel]').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
  document.querySelectorAll('[data-sidebar]').forEach(p=>p.hidden=p.dataset.sidebar!==name);
@@ -170,6 +195,13 @@ function draw(){
        'data-rotate-id':f.id,'aria-label':'旋转家具','role':'button'}));
    }
    world.append(g);
+ }
+ if(doc.airflowSource==='custom'&&Number.isFinite(doc.airflowX)&&Number.isFinite(doc.airflowZ)){
+   const x=doc.airflowX,z=doc.airflowZ;
+   world.append(el('circle',{cx:x,cy:z,r:.23,class:'wind-source-marker','data-wind-source':'true','pointer-events':'none'}));
+   world.append(el('path',{d:'M '+(x-.45)+' '+z+' L '+(x-.13)+' '+z+' M '+(x-.27)+' '+(z-.12)+' L '+(x-.13)+' '+z+' L '+(x-.27)+' '+(z+.12),
+     class:'wind-source-arrow','pointer-events':'none'}));
+   world.append(el('text',{x:x+.28,y:z-.25,class:'wind-source-label','pointer-events':'none'},'风源'));
  }
  if(anchor&&current&&tool==='wall'){
    preview.append(line(...anchor,...current,{class:'preview-wall'}));
@@ -247,6 +279,21 @@ function picked(kind,id){selection={kind,id};draw();inspect();}
 svg.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=screenPoint(e);if(!p)return;
+ if(placingWindSource){
+   if(Math.abs(p[0])>doc.width/2||Math.abs(p[1])>doc.depth/2){
+     stat('请点击户型范围内的位置');e.preventDefault();return;
+   }
+   const ok=change(()=>{
+     doc.airflowSource='custom';
+     doc.airflowX=Number(p[0].toFixed(2));
+     doc.airflowZ=Number(p[1].toFixed(2));
+   });
+   finishWindPlacement(ok);
+   if(ok){sidebar('simulation');resetFlowOverlay();
+     stat('风源已放置：X '+doc.airflowX.toFixed(2)+'m，Z '+doc.airflowZ.toFixed(2)+'m · 可切换 3D 查看');
+   }
+   e.preventDefault();return;
+ }
  if(tool==='wall'){
   const q=snapPosition(p,doc,.1,{disable:e.altKey});
   if(anchor){const a=anchor;anchor=null;change(()=>{const w=addWall(doc,a,q);selection={kind:'wall',id:w.id};});}
@@ -626,7 +673,7 @@ document.addEventListener('keydown',e=>{
  const cmd=e.ctrlKey||e.metaKey;
  if(cmd&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)goForward();else goBack();return;}
  if(cmd&&e.key.toLowerCase()==='y'){e.preventDefault();goForward();return;}
- if(e.key==='Escape'){toolMode('select');return;}
+ if(e.key==='Escape'){if(placingWindSource){e.preventDefault();finishWindPlacement(false);}else toolMode('select');return;}
  if(['Delete','Backspace'].includes(e.key)&&selection){
   e.preventDefault();change(()=>deleteObject(doc,selection.id));selection=null;refresh();return;
  }
