@@ -266,6 +266,7 @@ test('CFD export offers validated solver input, not fabricated flow results',asy
  await page.goto('/studio.html?template=sunlit&view=3d');
  await page.locator('[data-panel="analysis"]').click();
  const downloadPromise=page.waitForEvent('download');
+ await page.locator('details:has(#cfd-export) summary').click();
  await page.locator('#cfd-export').click();
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('qixu-openfoam-input.json');
@@ -276,6 +277,7 @@ test('CFD STL export downloads actual 3D obstacle geometry',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
  await page.locator('[data-panel="analysis"]').click();
  const pending=page.waitForEvent('download');
+ await page.locator('details:has(#cfd-export-stl) summary').click();
  await page.locator('#cfd-export-stl').click();
  const download=await pending;
  expect(download.suggestedFilename()).toBe('qixu-obstacles.stl');
