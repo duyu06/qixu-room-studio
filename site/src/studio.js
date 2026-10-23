@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
+import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
@@ -295,6 +296,12 @@ $('camera-top').addEventListener('click',()=>{
  orbit.target.set(0,0,0);orbit.update();
  stat('俯视 3D · 拖动可旋转 / 平移');
 });
+for(const b of document.querySelectorAll('[data-lighting]'))b.addEventListener('click',()=>{
+ const mode=b.dataset.lighting;
+ window.qixuSetLighting?.(mode);
+ document.querySelectorAll('[data-lighting]').forEach(x=>x.classList.toggle('active',x===b));
+ stat('3D 光照：'+b.textContent.trim());
+});
 $('camera-eye').addEventListener('click',()=>{
  if(view!=='3d')setView('3d');
  if(!ready||view!=='3d'||touring)return;
@@ -439,7 +446,7 @@ function renderThree(){
   const child=content.children[0];content.remove(child);disposeGroup(child);
  }
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(doc.width,doc.depth),
-   new THREE.MeshStandardMaterial({color:doc.floor,roughness:.85,metalness:0}));
+   floorMaterial(doc.floor));
  floor.rotation.x=-Math.PI/2;floor.position.y=.02;floor.receiveShadow=true;content.add(floor);
  if(doc.reference){
   const texture=new THREE.TextureLoader().load(doc.reference);
@@ -455,7 +462,7 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.89,
+  const material=new THREE.MeshStandardMaterial({color:doc.wallColor,roughness:.93,
     transparent:fadeWall,opacity:fadeWall?.2:1,depthWrite:!fadeWall,side:THREE.DoubleSide});
   for(const piece of wallPieces(doc,wall)){
    buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,doc.thickness,
@@ -500,6 +507,7 @@ function initThree(){
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.8));
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.shadowMap.autoUpdate=true;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=demoInfo?1.18:1.5;
  $('three-viewport').append(renderer.domElement);
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
@@ -507,12 +515,16 @@ function initThree(){
  orbit.enablePan=true;orbit.screenSpacePanning=true;
  orbit.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
  orbit.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
- scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,demoInfo?1.6:2.2));
+ const ambient=new THREE.HemisphereLight(0xfffaf0,0x91a898,1.15);scene.add(ambient);
  const sun=new THREE.DirectionalLight(0xffeed4,demoInfo?2.25:2.9);
  sun.position.set(-13,22,-18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
  sun.shadow.camera.left=-35;sun.shadow.camera.right=35;
  sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;
- sun.shadow.camera.far=100;scene.add(sun);
+ sun.shadow.camera.far=100;sun.shadow.bias=-.00015;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
+ const presets={day:{sun:2.7,ambient:1.15,color:0xffeed4,exposure:1.22},evening:{sun:1.45,ambient:.63,color:0xffb76d,exposure:1.35},showcase:{sun:2.4,ambient:1.8,color:0xffffff,exposure:1.3}};
+ function applyLighting(mode){const p=presets[mode]||presets.day;sun.intensity=p.sun;ambient.intensity=p.ambient;sun.color.setHex(p.color);renderer.toneMappingExposure=p.exposure;}
+ window.qixuSetLighting=mode=>{applyLighting(mode);localStorage.setItem('qixu-lighting-mode',mode);};
+ applyLighting(localStorage.getItem('qixu-lighting-mode')||'day');
  content=new THREE.Group();scene.add(content);
  const resize=()=>{
   const r=$('three-viewport').getBoundingClientRect();if(!r.width||!r.height)return;
