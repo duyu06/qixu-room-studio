@@ -9,8 +9,8 @@ function blocked(a,b,wall,openings,clearance=.04){
  if(t<0||t>1||u<0||u>1)return false;
  return !openings.some(o=>o.wallId===wall.id&&Math.abs(t-o.t)*Math.hypot(rx,ry)<o.width/2-clearance);
 }
-export function airflowRoute(doc,{spacing=.32}={}){
- const openings=doc.openings.filter(o=>['door','window'].includes(o.kind)&&doc.walls.some(w=>w.id===o.wallId));
+export function airflowRoute(doc,{spacing=.32,furniture=false,openingFractions={}}={}){
+ const openings=doc.openings.filter(o=>['door','window'].includes(o.kind)&&doc.walls.some(w=>w.id===o.wallId)&&Number(openingFractions[o.id]??1)>0);
  if(openings.length<2)return null;
  const position=o=>{const w=doc.walls.find(w=>w.id===o.wallId);return [w.a[0]+(w.b[0]-w.a[0])*o.t,w.a[1]+(w.b[1]-w.a[1])*o.t];};
  const start=position(openings[0]),goal=position(openings.at(-1));
@@ -30,7 +30,13 @@ export function airflowRoute(doc,{spacing=.32}={}){
    const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=cols||ny>=rows)continue;
    const nid=key(nx,ny);if(parent[nid]!==-1)continue;
    const q=point(nx,ny);
-   if(doc.walls.some(w=>blocked(p,q,w,openings)))continue;
+   if(doc.walls.some(w=>blocked(p,q,w,openings.map(o=>({...o,width:o.width*Math.max(0,Math.min(1,Number(openingFractions[o.id]??1)))})))))continue;
+   if(furniture&&doc.furniture.some(f=>{
+     if(f.height<.35)return false;
+     const c=Math.cos(f.rotation),s=Math.sin(f.rotation),vx=q[0]-f.x,vz=q[1]-f.z;
+     const lx=vx*c-vz*s,lz=vx*s+vz*c;
+     return Math.abs(lx)<f.width/2+.16&&Math.abs(lz)<f.depth/2+.16;
+   }))continue;
    parent[nid]=id;queue[tail++]=nid;
   }
  }
