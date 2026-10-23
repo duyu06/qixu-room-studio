@@ -351,7 +351,7 @@ $('airflow-toggle').addEventListener('change',e=>{
  if(airflowOverlay){scene?.remove(airflowOverlay.group);airflowOverlay.group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});airflowOverlay=null;}
  if(airflowEnabled){
    if(view!=='3d')setView('3d');
-   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc,{openings:Object.fromEntries(doc.openings.filter(o=>o.kind==='door'||o.kind==='window').map((o,i,a)=>[o.id,i===0?(doc.flowInlet??1):i===a.length-1?(doc.flowOutlet??1):1]))});scene.add(airflowOverlay.group);}
+   if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
    $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
    stat(airflowOverlay?.available?'气流粒子预览：门窗间示意路径（非 CFD）':'请添加至少两个门窗开口用于气流示意');
  }else{ $('three-viewport').dataset.airflowActive='false';stat('已关闭气流示意');}
@@ -733,7 +733,7 @@ function renderThree(){
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
  grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
- if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
+ if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc,{openings:flowSettings().openings,flowScale:Math.min(3,Math.max(0,(evaluateVentilation(doc,flowSettings()).flowM3s||0)/.45))});scene.add(airflowOverlay.group);}
  $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
 }
 function initThree(){
