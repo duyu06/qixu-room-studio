@@ -29,11 +29,33 @@ export function createProject(){
       {id:id(),kind:'window',wallId:walls[2].id,t:.31,width:1.75,height:1.35,sill:.85}
     ],furniture:[]};
 }
-export function snapPosition(p,doc,grid=.1){
-  let q=[Math.round(p[0]/grid)*grid,Math.round(p[1]/grid)*grid];
-  for(const wall of doc.walls)for(const end of [wall.a,wall.b])
-    if(Math.hypot(q[0]-end[0],q[1]-end[1])<.22)q=[...end];
-  return [Number(q[0].toFixed(3)),Number(q[1].toFixed(3))];
+// Prioritize wall endpoints, then wall centerlines, then the metric grid.
+// Exclusion avoids a dragged endpoint snapping back to its own previous position.
+export function snapPosition(p,doc,grid=.1,{excludePoint=null,excludeWallId=null,disable=false}={}){
+ if(disable)return [...p];
+ const excluded=end=>excludePoint&&Math.hypot(end[0]-excludePoint[0],end[1]-excludePoint[1])<.025;
+ let best=null,bestDist=.22;
+ for(const wall of doc.walls)for(const end of [wall.a,wall.b]){
+   if(excluded(end))continue;
+   const distance=Math.hypot(p[0]-end[0],p[1]-end[1]);
+   if(distance<bestDist){best=[...end];bestDist=distance;}
+ }
+ if(best)return best;
+ // Snap to a wall axis without shifting away from its physical centerline.
+ best=null;bestDist=.12;
+ for(const wall of doc.walls){
+   if(wall.id===excludeWallId)continue;
+   const vx=wall.b[0]-wall.a[0],vz=wall.b[1]-wall.a[1],sq=vx*vx+vz*vz;
+   if(sq<.0001)continue;
+   const t=clamp(((p[0]-wall.a[0])*vx+(p[1]-wall.a[1])*vz)/sq,0,1);
+   const projected=[wall.a[0]+t*vx,wall.a[1]+t*vz];
+   if(excluded(projected))continue;
+   const distance=Math.hypot(p[0]-projected[0],p[1]-projected[1]);
+   if(distance<bestDist){best=projected;bestDist=distance;}
+ }
+ if(best)return best.map(v=>Number(v.toFixed(3)));
+ return [Math.round(p[0]/grid)*grid,Math.round(p[1]/grid)*grid]
+   .map(v=>Number(v.toFixed(3)));
 }
 export function nearestWall(doc,p){
   let best=null,dist=Infinity;
