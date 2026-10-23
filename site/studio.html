@@ -100,9 +100,10 @@
       <button data-floor="#eee5d8" style="--sw:#eee5d8" title="米白砖"></button>
     </div>
     <h3>自定义贴图（当前墙面或地面）</h3>
-    <div class="action-grid"><button type="button" id="texture-wall">上传墙面贴图</button><button type="button" id="texture-floor">上传地面贴图</button></div>
+    <div class="action-grid"><button type="button" id="texture-wall">上传墙面贴图</button><button type="button" id="texture-floor">上传地面贴图</button><button type="button" id="texture-clear-wall">清除墙面贴图</button><button type="button" id="texture-clear-floor">清除地面贴图</button></div>
     <input type="file" id="texture-file" accept="image/png,image/jpeg,image/webp" hidden>
-    <p class="hint">仅支持 1MB 内图片，自动保存到项目 JSON；避免大纹理导致浏览器存储不足。</p>
+    <label class="field">材质重复次数 <input id="texture-repeat" type="number" min="1" max="12" value="3" step="1"></label>
+    <p class="hint">仅支持 1MB 内图片，自动保存到项目 JSON；重复铺贴可设置 1–12 次。</p>
     <h3>墙面材质</h3><div class="action-grid"><button data-wall-pattern="paint" type="button">乳胶漆</button><button data-wall-pattern="plaster" type="button">哑光肌理</button><button data-wall-pattern="wallpaper" type="button">墙纸纹理</button></div><h3>墙体配色</h3>
     <div class="swatches" id="wall-swatches">
       <button data-wall-color="#fffaf0" style="--sw:#fffaf0" title="暖白"></button>
