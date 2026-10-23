@@ -44,3 +44,20 @@ test('3D button must show a real WebGL canvas, not the 2D SVG',async({page})=>{
    await expect(page.locator('#status-text')).toContainText('3D 无法启动');
  }
 });
+
+test('3D navigation controls switch camera tools without leaving workspace',async({page})=>{
+ await page.goto('/studio.html?template=sunlit');
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('#camera-pan').click();
+ await expect(page.locator('#camera-pan')).toHaveAttribute('aria-pressed','true');
+ await page.locator('#camera-pan').click();
+ await expect(page.locator('#camera-pan')).toHaveAttribute('aria-pressed','false');
+ await page.locator('#camera-eye').click();
+ await expect(page.locator('#status-text')).toContainText('室内视角');
+ await page.locator('#camera-top').click();
+ await expect(page.locator('#status-text')).toContainText('俯视 3D');
+ await page.locator('#reset-camera').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect(page).toHaveURL(/studio\.html/);
+});
