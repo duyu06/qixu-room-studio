@@ -346,8 +346,9 @@ $('airflow-toggle').addEventListener('change',e=>{
  if(airflowEnabled){
    if(view!=='3d')setView('3d');
    if(ready&&!airflowOverlay){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
+   $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
    stat(airflowOverlay?.available?'气流粒子预览：门窗间示意路径（非 CFD）':'请添加至少两个门窗开口用于气流示意');
- }else stat('已关闭气流示意');
+ }else{ $('three-viewport').dataset.airflowActive='false';stat('已关闭气流示意');}
 });
 $('airflow-speed').addEventListener('input',e=>{airflowSpeed=Number(e.target.value);});
 $('camera-pan').addEventListener('click',()=>{
@@ -661,6 +662,7 @@ function renderThree(){
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
  grid.position.y=.014;grid.visible=!demoInfo;content.add(grid);
  if(airflowEnabled){airflowOverlay=makeAirflowOverlay(doc);scene.add(airflowOverlay.group);}
+ $('three-viewport').dataset.airflowActive=String(Boolean(airflowOverlay?.available));
 }
 function initThree(){
  if(ready)return;
