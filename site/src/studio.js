@@ -272,6 +272,36 @@ document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 for(const name of ['show-grid','show-measures'])$(name).addEventListener('change',draw);
 $('fit-view').addEventListener('click',fit);$('reset-camera').addEventListener('click',fit);
+let panTool=false;
+function updateCameraTool(){
+ const button=$('camera-pan');
+ button.classList.toggle('active',panTool);
+ button.setAttribute('aria-pressed',String(panTool));
+ button.textContent=panTool?'✋ 平移中':'✋ 平移';
+ if(orbit)orbit.mouseButtons.LEFT=panTool?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
+ if(orbit)orbit.touches.ONE=panTool?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
+}
+$('camera-pan').addEventListener('click',()=>{
+ if(view!=='3d')setView('3d');
+ if(view!=='3d'||touring)return;
+ panTool=!panTool;updateCameraTool();
+ stat(panTool?'平移模式：左键拖拽画面；右键仍可平移':'旋转模式：左键拖动视角，右键平移');
+});
+$('camera-top').addEventListener('click',()=>{
+ if(view!=='3d')setView('3d');
+ if(!ready||view!=='3d'||touring)return;
+ const distance=Math.max(doc.width,doc.depth)*1.55;
+ camera.position.set(0,distance,.001);
+ orbit.target.set(0,0,0);orbit.update();
+ stat('俯视 3D · 拖动可旋转 / 平移');
+});
+$('camera-eye').addEventListener('click',()=>{
+ if(view!=='3d')setView('3d');
+ if(!ready||view!=='3d'||touring)return;
+ camera.position.set(doc.width*.39,1.65,Math.max(2.8,doc.depth*.53));
+ orbit.target.set(0,1.4,0);orbit.update();
+ stat('室内视角 · 拖动旋转 / 右键平移 / 滚轮缩放');
+});
 $('undo').addEventListener('click',goBack);$('redo').addEventListener('click',goForward);
 $('project-title').addEventListener('change',e=>change(()=>doc.title=e.target.value.trim().slice(0,50)||'未命名空间'));
 $('new-project').addEventListener('click',()=>{
@@ -473,7 +503,10 @@ function initThree(){
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=demoInfo?1.18:1.5;
  $('three-viewport').append(renderer.domElement);
  orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;
- orbit.minDistance=2;orbit.maxDistance=130;orbit.maxPolarAngle=Math.PI*.49;
+ orbit.minDistance=1.2;orbit.maxDistance=130;orbit.maxPolarAngle=Math.PI*.495;
+ orbit.enablePan=true;orbit.screenSpacePanning=true;
+ orbit.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
+ orbit.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
  scene.add(new THREE.HemisphereLight(0xfffaf0,0x91a898,demoInfo?1.6:2.2));
  const sun=new THREE.DirectionalLight(0xffeed4,demoInfo?2.25:2.9);
  sun.position.set(-13,22,-18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
@@ -511,7 +544,7 @@ function initThree(){
    if(object?.userData.selection){selection=object.userData.selection;inspect();draw();break;}
   }
  });
- ready=true;fit();renderThree();resize();
+ ready=true;updateCameraTool();fit();renderThree();resize();
  function frame(time){
    requestAnimationFrame(frame);if(view!=='3d')return;
    const dt=Math.min(.055,Math.max(0,(time-lastFrame)/1000));lastFrame=time;
