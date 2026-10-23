@@ -33,3 +33,9 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 @media(max-width:850px){.studio-demo-banner{padding:10px 14px}.studio-demo-banner span{max-width:400px}}
 @media(max-width:580px){.studio-demo-banner{flex-direction:column;align-items:stretch;gap:8px}
 .studio-demo-banner>div:last-child{justify-content:space-between}.studio-demo-banner>div:last-child>*{flex:1;text-align:center}}
+
+/* 3D navigation affordances */
+.canvas-action button.active{background:#e4f2e9;border-color:#76a98c;color:#28543b;font-weight:700}
+#three-viewport canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#three-viewport canvas:active{cursor:grabbing}
+@media(max-width:1100px){.canvas-action{flex-wrap:wrap;justify-content:flex-end}.canvas-header{height:auto;min-height:57px;padding-top:6px;padding-bottom:6px}}
