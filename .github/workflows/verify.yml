@@ -34,3 +34,4 @@ jobs:
           node tests/studio-render-bridge.test.mjs
           node tests/studio-tour.test.mjs
           node tests/studio-airflow-path.test.mjs
+          node tests/studio-flow-model.test.mjs
