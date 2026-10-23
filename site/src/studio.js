@@ -3,6 +3,7 @@ import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
 import {evaluateVentilation} from './studio-flow-model.js';
+import {buildCfdJob} from './studio-cfd-job.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -361,6 +362,15 @@ function flowSettings(){
  if(items.length>1)openingFractions[items.at(-1).id]=doc.flowOutlet??1;
  return {pressurePa:doc.flowPressurePa??5,openings:openingFractions};
 }
+$('cfd-export').addEventListener('click',()=>{
+ try{
+  const request=buildCfdJob(doc,flowSettings());
+  const blob=new Blob([JSON.stringify(request,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='qixu-openfoam-input.json';a.click();URL.revokeObjectURL(url);
+  $('cfd-result-status').textContent='已导出求解输入。尚无 OpenFOAM 结果；需要独立求解器完成网格与计算。';
+ }catch(e){$('cfd-result-status').textContent='CFD 输入校验失败：'+e.message;}
+});
 function showFlowEstimate(){
  const r=evaluateVentilation(doc,flowSettings());
  $('flow-estimate').textContent=r.available?
