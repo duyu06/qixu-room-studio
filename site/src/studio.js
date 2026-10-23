@@ -3,6 +3,7 @@ import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {projectStorageKey,PERSONAL_PROJECT_KEY} from './qixu-routes.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {calculateRooms,materialTakeoff,furnitureDiagnostics,suggestLayout} from './studio-geometry.js';
 import {parseDxf,exportDxf} from './studio-dxf.js';
 import {canWalkAt,findWalkStart} from './studio-tour.js';
@@ -22,6 +23,27 @@ let history=[],future=[],anchor=null,current=null,drag=null;
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
 const furnitureMeshes=new Map();
+const glbLoader=new GLTFLoader();
+let sceneEpoch=0;
+function attachGlb(entry,item){
+ if(!item.modelData)return;
+ const epoch=sceneEpoch,modelKey=item.modelData;
+ try{
+  const raw=atob(modelKey.split(',')[1]);const bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  glbLoader.parse(bytes.buffer,'',gltf=>{
+   if(epoch!==sceneEpoch||!entry.group.parent)return;
+   const root=gltf.scene;const box=new THREE.Box3().setFromObject(root);
+   const size=box.getSize(new THREE.Vector3());
+   if(!Number.isFinite(size.x+size.y+size.z)||size.x<.0001||size.z<.0001){notify('GLB 模型尺寸无效');return;}
+   root.position.sub(box.getCenter(new THREE.Vector3()));
+   root.scale.set(item.width/size.x,item.height/Math.max(size.y,.001),item.depth/size.z);
+   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+   entry.group.clear();entry.group.add(root);entry.externalGlb=true;
+  },err=>notify('GLB 解析失败：'+err.message));
+ }catch(err){notify('GLB 读取失败：'+err.message);}
+}
+
 let touring=false,walkYaw=0,walkPitch=0,mouseTurn=null,lastFrame=0;
 const walkPressed=new Set();
 const copy=()=>structuredClone(doc);
@@ -357,6 +379,32 @@ $('import-legacy').addEventListener('click',()=>{
   '旧版墙线已导入。请检查门窗、尺寸和真实比例。');}
  catch(e){notify('迁移失败：'+e.message);}
 });
+$('import-glb').addEventListener('click',()=>{
+ if(selection?.kind!=='furniture'){notify('请先在 2D 或 3D 中选中一件家具');return;}
+ $('file-glb').click();
+});
+$('file-glb').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];e.target.value='';
+ if(!file)return;
+ if(file.size>2_000_000){notify('GLB 超过 2MB，当前仅支持小型自包含模型');return;}
+ if(selection?.kind!=='furniture'){notify('请先选择家具');return;}
+ try{
+  const buffer=await file.arrayBuffer();
+  const view=new DataView(buffer);
+  if(view.byteLength<20||view.getUint32(0,true)!==0x46546c67||view.getUint32(4,true)!==2||
+      view.getUint32(8,true)!==buffer.byteLength)throw Error('不是有效的 GLB 2.0 文件');
+  const jsonLength=view.getUint32(12,true);
+  if(jsonLength<2||jsonLength>buffer.byteLength-20||view.getUint32(16,true)!==0x4e4f534a)throw Error('GLB JSON 块无效');
+  const manifest=JSON.parse(new TextDecoder().decode(new Uint8Array(buffer,20,jsonLength)));
+  if(manifest.asset?.version!=='2.0'||['buffers','images'].some(key=>(manifest[key]||[]).some(x=>x.uri&&!x.uri.startsWith('data:'))))
+   throw Error('仅支持不带外链的自包含 GLB 2.0');
+  const binary=new Uint8Array(buffer);let raw='';
+  for(let i=0;i<binary.length;i+=32768)raw+=String.fromCharCode(...binary.subarray(i,i+32768));
+  const data='data:model/gltf-binary;base64,'+btoa(raw),id=selection.id;
+  if(change(()=>{const item=doc.furniture.find(f=>f.id===id);if(!item)throw Error('家具已删除');item.modelData=data;}))
+   notify('GLB 已绑定选中的家具；切换 3D 查看');
+ }catch(err){notify('GLB 导入失败：'+err.message);}
+});
 $('import-file').addEventListener('click',()=>$('file-json').click());
 $('import-dxf').addEventListener('click',()=>$('file-dxf').click());
 $('file-dxf').addEventListener('change',async e=>{
@@ -489,7 +537,7 @@ function renderThree(){
      content.remove(entry.group);disposeGroup(entry.group);furnitureMeshes.delete(id);
    }
    for(const item of doc.furniture){
-     const shapeKey=JSON.stringify([item.type,item.width,item.depth,item.height]);
+     const shapeKey=JSON.stringify([item.type,item.width,item.depth,item.height,item.modelData?.length,item.modelData?.slice(-40)]);
      let entry=furnitureMeshes.get(item.id);
      if(entry&&entry.shapeKey!==shapeKey){
        content.remove(entry.group);disposeGroup(entry.group);
@@ -499,7 +547,7 @@ function renderThree(){
        const group=new THREE.Group();
        group.userData.selection={kind:'furniture',id:item.id};
        group.add(createProceduralFurniture(item));content.add(group);
-       entry={group,shapeKey};furnitureMeshes.set(item.id,entry);
+       entry={group,shapeKey};furnitureMeshes.set(item.id,entry);attachGlb(entry,item);
      }
      entry.group.position.set(item.x,0,item.z);
      entry.group.rotation.y=-item.rotation;
@@ -509,7 +557,7 @@ function renderThree(){
    return;
  }
  lastSceneKey=sceneKey;lastStructureKey=structureKey;
- furnitureMeshes.clear();
+ furnitureMeshes.clear();sceneEpoch++;
  sceneRebuilds++;
  $('three-viewport').dataset.sceneRebuilds=String(sceneRebuilds);
  while(content.children.length){
@@ -564,7 +612,8 @@ function renderThree(){
   group.userData.selection={kind:'furniture',id:item.id};
   group.add(createProceduralFurniture(item));
   content.add(group);
-  furnitureMeshes.set(item.id,{group,shapeKey:JSON.stringify([item.type,item.width,item.depth,item.height])});
+  const entry={group,shapeKey:JSON.stringify([item.type,item.width,item.depth,item.height,item.modelData?.length,item.modelData?.slice(-40)])};
+  furnitureMeshes.set(item.id,entry);attachGlb(entry,item);
  }
  const grid=new THREE.GridHelper(Math.max(doc.width,doc.depth)+2,
    Math.max(6,Math.ceil(Math.max(doc.width,doc.depth)*2)),0xaec5b6,0xdfebe2);
