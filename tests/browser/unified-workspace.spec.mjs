@@ -69,8 +69,24 @@ test('material sidebar lighting presets respond without navigation',async({page}
  for(const preset of ['day','evening','showcase']){
    await page.locator('[data-lighting="'+preset+'"]').click();
    await expect(page.locator('[data-lighting="'+preset+'"]')).toHaveClass(/active/);
-   expect(await page.evaluate(()=>localStorage.getItem('qixu-lighting-mode'))).toBe(preset);
+   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')).lightingMode)).toBe(preset);
  }
  await expect(page.locator('#plan-svg')).toBeHidden();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
+
+test('lighting mode and surfaces survive 2D/3D and full reload',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="materials"]').click();
+ await page.locator('[data-lighting="evening"]').click();
+ await page.locator('[data-floor="#bda58a"]').click();
+ await page.locator('[data-view="2d"]').click();
+ await page.locator('[data-view="3d"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.reload();
+ await page.locator('[data-panel="materials"]').click();
+ await expect(page.locator('[data-lighting="evening"]')).toHaveClass(/active/);
+ const project=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-demo-sunlit-v1')));
+ expect(project.lightingMode).toBe('evening');
+ expect(project.floor).toBe('#bda58a');
 });
