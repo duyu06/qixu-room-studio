@@ -286,7 +286,7 @@ test('CFD STL export downloads actual 3D obstacle geometry',async({page})=>{
 
 test('selected furniture offers precise 90 degree rotation and keyboard duplication',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=2d');
- await page.locator('[data-furniture-id] rect').last().click();
+ await page.locator('[data-furniture-id] rect').last().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:320,clientY:320});
  const angle=page.locator('[data-prop="angle"]');
  const original=Number(await angle.inputValue());
  await page.locator('[data-rotate-right]').click();
@@ -377,4 +377,18 @@ test('2D and docked 3D preview remain live side by side during furniture edits',
  await page.locator('#dock-close').click();
  await expect(page.locator('#plan-svg')).toBeVisible();
  await expect(page.locator('#three-viewport')).toBeHidden();
+});
+
+test('dual view resize handle and selected furniture focus work without view navigation',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-view="split"]').click();
+ const grip=page.locator('#split-resizer');
+ await expect(grip).toBeVisible();
+ await grip.focus();await page.keyboard.press('ArrowLeft');
+ await expect(grip).toHaveAttribute('aria-valuenow','41');
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('[data-furniture-id] rect').last().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:320,clientY:320});
+ await page.locator('#dock-focus').click();
+ await expect(page.locator('#status-text')).toContainText('镜头已定位');
+ await expect(page.locator('#plan-svg')).toBeVisible();
 });
