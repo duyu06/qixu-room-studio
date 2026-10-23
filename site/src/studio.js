@@ -235,7 +235,7 @@ svg.addEventListener('pointerdown',e=>{
 });
 svg.addEventListener('pointermove',e=>{
  current=screenPoint(e);if(!current)return;
- if(tool==='wall'&&anchor){draw();return;}
+ if(tool==='wall'&&anchor){current=snapPosition(current,doc,.1,{disable:e.altKey});draw();return;}
  if(!drag)return;
  const next=[drag.from[0]+current[0]-drag.p[0],drag.from[1]+current[1]-drag.p[1]];
  if(drag.type==='endpoint'){
