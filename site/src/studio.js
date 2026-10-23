@@ -406,6 +406,20 @@ $('file-glb').addEventListener('change',async e=>{
  }catch(err){notify('GLB 导入失败：'+err.message);}
 });
 $('import-file').addEventListener('click',()=>$('file-json').click());
+$('import-ifc').addEventListener('click',()=>$('file-ifc').click());
+$('file-ifc').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];e.target.value='';
+ if(!file)return;
+ if(file.size>8_000_000){notify('IFC 文件超过 8MB');return;}
+ $('status-text').textContent='正在按需加载 IFC WASM，读取墙体几何…';
+ try{
+  const {parseIfcWallPlan}=await import('./studio-ifc.js');
+  const result=await parseIfcWallPlan(await file.arrayBuffer());
+  if(!confirm('解析到 '+result.wallCount+' 条 IFC 墙体（'+result.schema+'）。导入将替换当前项目，是否继续？'))return;
+  useDoc(result.project,'已导入 IFC 墙线。'+result.warnings.join('；'));
+  $('status-text').textContent=result.warnings.join('；');
+ }catch(err){notify('IFC 导入失败：'+err.message);$('status-text').textContent=err.message;}
+});
 $('import-dxf').addEventListener('click',()=>$('file-dxf').click());
 $('file-dxf').addEventListener('change',async e=>{
   const f=e.target.files?.[0];e.target.value='';
