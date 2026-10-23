@@ -176,6 +176,7 @@ test('P1 self-contained GLB imports as real geometry and persists on reload',asy
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
  await page.reload();
+ await page.locator('[data-view="3d"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
 });
