@@ -28,14 +28,16 @@ function patterned(kind){
  t.colorSpace=THREE.SRGBColorSpace;t.repeat.set(3,3);t.anisotropy=4;
  return t;
 }
-export function floorMaterial(color,kind='auto'){
+export function floorMaterial(color,kind='auto',source=null){
  const selected=kind==='auto'?(['#ded4c3','#bda58a'].includes(String(color).toLowerCase())?'wood':'stone'):kind;
- const texture=patterned(selected);
+ const texture=source?new THREE.TextureLoader().load(source):patterned(selected);
  return new THREE.MeshStandardMaterial({map:texture,color:selected==='wood'?0xffffff:color,
    roughness:selected==='stone'?.7:selected==='tile'?.52:.8,metalness:0});
 }
-export function wallMaterial(color,kind='paint'){
+export function wallMaterial(color,kind='paint',source=null){
  const mat=new THREE.MeshStandardMaterial({color,roughness:kind==='plaster'?.98:kind==='wallpaper'?.88:.94,metalness:0});
+ if(source){const texture=new THREE.TextureLoader().load(source);texture.colorSpace=THREE.SRGBColorSpace;
+  mat.map=texture;return mat;}
  if(kind==='wallpaper'||kind==='plaster'){
   const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
   x.fillStyle='#ffffff';x.fillRect(0,0,128,128);
