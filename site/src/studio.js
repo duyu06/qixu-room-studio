@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
+import {snapFurniture} from './studio-alignment.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -23,7 +24,7 @@ const STORE=projectStorageKey(demoInfo?.slug);
 let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
-let history=[],future=[],anchor=null,current=null,drag=null;
+let history=[],future=[],anchor=null,current=null,drag=null,alignmentGuides=[];
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
 const furnitureMeshes=new Map();
@@ -203,6 +204,11 @@ function draw(){
      class:'wind-source-arrow','pointer-events':'none'}));
    world.append(el('text',{x:x+.28,y:z-.25,class:'wind-source-label','pointer-events':'none'},'风源'));
  }
+ if(alignmentGuides.length)for(const guide of alignmentGuides){
+   const attrs={class:'alignment-guide','pointer-events':'none'};
+   preview.append(guide.axis==='x'?line(guide.value,-doc.depth/2,guide.value,doc.depth/2,attrs):
+     line(-doc.width/2,guide.value,doc.width/2,guide.value,attrs));
+ }
  if(anchor&&current&&tool==='wall'){
    preview.append(line(...anchor,...current,{class:'preview-wall'}));
    preview.append(el('circle',{cx:anchor[0],cy:anchor[1],r:.1,fill:'#288862'}));
@@ -371,19 +377,22 @@ svg.addEventListener('pointermove',e=>{
  }
  const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
  const point=snapPosition(next,doc,.1,{disable:e.altKey});
- f.x=clamp(point[0],-doc.width/2+f.width/2,doc.width/2-f.width/2);
- f.z=clamp(point[1],-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
+ const aligned=(!e.altKey&&$('snap-furniture').checked)?snapFurniture(doc,f.id,point[0],point[1]):{x:point[0],z:point[1],guides:[]};
+ alignmentGuides=aligned.guides;
+ f.x=clamp(aligned.x,-doc.width/2+f.width/2,doc.width/2-f.width/2);
+ f.z=clamp(aligned.z,-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
  drag.moved=true;draw();e.preventDefault();
 });
 const drop=()=>{
  if(!drag)return;
+ alignmentGuides=[];
  if(drag.moved){
    const error=validateProject(doc);
    if(error){doc=drag.before;notify('墙体修改已取消：'+error);}
    else{history.push(drag.before);future=[];}
    refresh();
  }
- drag=null;
+ drag=null;draw();
 };
 svg.addEventListener('pointerup',drop);svg.addEventListener('pointercancel',drop);
 svg.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom*(e.deltaY>0?.90:1.10),.6,3.6);draw();},{passive:false});
