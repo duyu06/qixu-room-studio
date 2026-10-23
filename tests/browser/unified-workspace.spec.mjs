@@ -202,7 +202,7 @@ test('P2 IFC STEP wall geometry imports through local web-ifc WASM',async({page}
 
 test('airflow preview toggles without losing 3D scene and floor textures persist',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=2d');
- await page.locator('[data-panel="analysis"]').click();
+ await page.locator('[data-panel="simulation"]').click();
  await page.locator('#airflow-toggle').check();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect(page.locator('#three-viewport')).toHaveAttribute('data-airflow-active','true');
@@ -235,7 +235,7 @@ test('wall PBR texture mode persists after scene redraw and reload',async({page}
 
 test('pressure boundary controls and custom floor texture persist in one studio project',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
- await page.locator('[data-panel="analysis"]').click();
+ await page.locator('[data-panel="simulation"]').click();
  await page.locator('#flow-pressure').fill('12');
  await page.locator('#flow-pressure').dispatchEvent('change');
  await page.locator('#flow-inlet').fill('55');
@@ -264,7 +264,7 @@ test('pressure boundary controls and custom floor texture persist in one studio 
 
 test('CFD export offers validated solver input, not fabricated flow results',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
- await page.locator('[data-panel="analysis"]').click();
+ await page.locator('[data-panel="simulation"]').click();
  const downloadPromise=page.waitForEvent('download');
  await page.locator('details:has(#cfd-export) summary').click();
  await page.locator('#cfd-export').click();
@@ -275,7 +275,7 @@ test('CFD export offers validated solver input, not fabricated flow results',asy
 
 test('CFD STL export downloads actual 3D obstacle geometry',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
- await page.locator('[data-panel="analysis"]').click();
+ await page.locator('[data-panel="simulation"]').click();
  const pending=page.waitForEvent('download');
  await page.locator('details:has(#cfd-export-stl) summary').click();
  await page.locator('#cfd-export-stl').click();
@@ -303,7 +303,7 @@ test('selected furniture offers precise 90 degree rotation and keyboard duplicat
 
 test('custom wind source and wider airflow coverage persist',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
- await page.locator('[data-panel="analysis"]').click();
+ await page.locator('[data-panel="simulation"]').click();
  await page.locator('#airflow-source').selectOption('custom');
  await page.locator('#airflow-source-x').fill('-2');
  await page.locator('#airflow-source-x').dispatchEvent('change');
@@ -320,4 +320,39 @@ test('custom wind source and wider airflow coverage persist',async({page})=>{
  await page.reload();
  p=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
  expect(p.airflowSource).toBe('custom');expect(p.airflowZ).toBe(.5);
+});
+
+test('simulation panel lets user place wind source with a 2D click and preview in 3D',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="simulation"]').click();
+ await expect(page.locator('#place-wind-source')).toBeVisible();
+ await page.locator('#place-wind-source').click();
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await expect(page.locator('#place-wind-source')).toHaveAttribute('aria-pressed','true');
+ await page.locator('#plan-svg').click({position:{x:220,y:180}});
+ await expect(page.locator('#place-wind-source')).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('[data-wind-source="true"]')).toHaveCount(1);
+ const key='qixu-studio-demo-sunlit-v1';
+ const point=await page.evaluate(k=>{const d=JSON.parse(localStorage.getItem(k));return [d.airflowSource,d.airflowX,d.airflowZ];},key);
+ expect(point[0]).toBe('custom');
+ expect(point.slice(1).every(Number.isFinite)).toBe(true);
+ await page.locator('#preview-wind-3d').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await expect(page.locator('[data-sidebar="simulation"]')).toBeVisible();
+ await page.reload();
+ await page.locator('[data-panel="simulation"]').click();
+ await page.locator('[data-view="2d"]').click();
+ await expect(page.locator('[data-wind-source="true"]')).toHaveCount(1);
+ const saved=await page.evaluate(k=>{const d=JSON.parse(localStorage.getItem(k));return [d.airflowX,d.airflowZ];},key);
+ expect(saved).toEqual(point.slice(1));
+});
+test('wind placement can be cancelled without changing project data',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="simulation"]').click();
+ const key='qixu-studio-demo-sunlit-v1';
+ const before=await page.evaluate(k=>localStorage.getItem(k),key);
+ await page.locator('#place-wind-source').click();
+ await page.locator('#plan-svg').press('Escape');
+ await expect(page.locator('#place-wind-source')).toHaveAttribute('aria-pressed','false');
+ expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBe(before);
 });
