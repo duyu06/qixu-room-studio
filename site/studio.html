@@ -115,14 +115,15 @@
    <div class="panel-section" data-sidebar="analysis" hidden>
     <div class="panel-top"><small>SPACE INSIGHTS</small><h2>空间分析</h2>
       <p>基于当前户型、门窗位置和家具布置进行即时评估，无须另开项目。</p></div>
-    <h3>三维气流示意</h3>
+    <h3>室内气流模拟</h3>
     <label class="field"><input id="airflow-toggle" type="checkbox"> 显示流动粒子（连接门窗开口）</label>
     <label class="field">进出风压差（Pa，输入假设值）<input id="flow-pressure" type="number" min="0" max="100" step="0.5" value="5"></label>
     <label class="field">进风口开度（%）<input id="flow-inlet" type="range" min="0" max="100" value="100"></label>
     <label class="field">出风口开度（%）<input id="flow-outlet" type="range" min="0" max="100" value="100"></label>
     <div id="flow-estimate" role="status" class="hint">等待计算简化孔口流量估算…</div>
+    <details><summary>高级：导出专业求解数据（可选）</summary>
     <div class="action-grid"><button id="cfd-export" type="button">导出 CFD 求解输入</button><button id="cfd-export-stl" type="button">导出三维障碍物 STL</button></div>
-    <p id="cfd-result-status" class="hint" role="status">CFD：尚未连接独立 OpenFOAM 求解服务；导出的是经过验证的任务输入，不是仿真结果。</p>
+    <p id="cfd-result-status" class="hint" role="status">这里只导出求解器输入，不生成真实 CFD 结果。</p></details>
     <label class="field">动画速度 <input id="airflow-speed" type="range" min="0.2" max="3" step="0.2" value="1"></label>
     <p class="hint">粒子路径是通风概念示意，不提供风速、压力、涡流或 CFD 结果。</p>
     <div id="studio-analysis-result" class="unified-analysis-result" role="status">切换到分析后计算当前空间…</div>
