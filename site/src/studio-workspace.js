@@ -13,7 +13,7 @@ function current(){
 }
 function hidePreview(){
  surface.hidden=true;
- $('plan-svg').hidden=document.querySelector('[data-view].active')?.dataset.view!=='2d';
+ $('plan-svg').toggleAttribute('hidden',document.querySelector('[data-view].active')?.dataset.view!=='2d');
  $('three-viewport').hidden=document.querySelector('[data-view].active')?.dataset.view!=='3d';
 }
 function showAnalysis(){
@@ -50,7 +50,7 @@ function showRender(force=false){
  // The iframe shares the same origin/storage and renders this exact key.
  document.querySelector('[data-view="3d"]')?.click();
  surface.hidden=false;
- $('plan-svg').hidden=true;
+ $('plan-svg').setAttribute('hidden','');
  $('three-viewport').hidden=true;
  const serialized=JSON.stringify(doc);
  if(force||lastRenderedScene!==serialized||!frame.getAttribute('src')){
