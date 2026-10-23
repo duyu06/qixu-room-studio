@@ -88,3 +88,5 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
  .canvas.dual-view .compass{right:18px}
  .canvas.dual-view .canvas-help{left:50%}
 }
+
+.alignment-guide{stroke:#159c88;stroke-width:.025;stroke-dasharray:.11 .07;opacity:.9;vector-effect:non-scaling-stroke}
