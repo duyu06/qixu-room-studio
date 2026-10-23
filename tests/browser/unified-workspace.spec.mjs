@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import {test,expect} from '@playwright/test';
 test('all Studio functions use one address and one project context',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=3d');
@@ -177,4 +178,20 @@ test('P1 self-contained GLB imports as real geometry and persists on reload',asy
  await page.reload();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await expect.poll(async()=>Number(await page.locator('#three-viewport').getAttribute('data-glb-loaded'))).toBeGreaterThan(0);
+});
+
+test('P2 IFC STEP wall geometry imports through local web-ifc WASM',async({page})=>{
+ test.setTimeout(90000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/studio.html?view=2d');
+ page.on('dialog',dialog=>dialog.accept());
+ await page.locator('#file-ifc').setInputFiles({
+   name:'upstream-example.ifc',mimeType:'application/x-step',
+   buffer:readFileSync('tests/fixtures/web-ifc-example.ifc')
+ });
+ await expect(page.locator('#project-title')).toHaveValue('IFC 墙体户型',{timeout:65000});
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('qixu-studio-v1')));
+ expect(saved.walls.length).toBeGreaterThan(0);
+ expect(saved.walls.every(w=>w.id.startsWith('ifc-')&&w.ifcExpressId)).toBeTruthy();
+ expect(errors).toEqual([]);
 });
