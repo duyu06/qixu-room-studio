@@ -12,5 +12,5 @@ assert.equal(evaluateVentilation(d,{pressurePa:5,openings:{a:0}}).available,fals
 const less=evaluateVentilation(d,{pressurePa:5,openings:{a:.5}});
 assert.ok(less.available&&less.flowM3s<base.flowM3s);
 assert.ok(evaluateVentilation(d,{pressurePa:20}).flowM3s>base.flowM3s);
-assert.match(base.note,/非/);
+assert.match(base.note,/未求解/);
 console.log('Reduced-order ventilation boundary test passed');
