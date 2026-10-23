@@ -9,11 +9,13 @@ function blocked(a,b,wall,openings,clearance=.04){
  if(t<0||t>1||u<0||u>1)return false;
  return !openings.some(o=>o.wallId===wall.id&&Math.abs(t-o.t)*Math.hypot(rx,ry)<o.width/2-clearance);
 }
-export function airflowRoute(doc,{spacing=.32,furniture=false,openingFractions={}}={}){
+export function airflowRoute(doc,{spacing=.32,furniture=false,openingFractions={},sourcePoint=null,targetOpeningId=null}={}){
  const openings=doc.openings.filter(o=>['door','window'].includes(o.kind)&&doc.walls.some(w=>w.id===o.wallId)&&Number(openingFractions[o.id]??1)>0);
- if(openings.length<2)return null;
+ if(openings.length<(sourcePoint?1:2))return null;
  const position=o=>{const w=doc.walls.find(w=>w.id===o.wallId);return [w.a[0]+(w.b[0]-w.a[0])*o.t,w.a[1]+(w.b[1]-w.a[1])*o.t];};
- const start=position(openings[0]),goal=position(openings.at(-1));
+ const start=sourcePoint?[Number(sourcePoint[0]),Number(sourcePoint[1])]:position(openings[0]);
+ const goal=position(openings.find(o=>o.id===targetOpeningId)||openings.at(-1));
+ if(![...start,...goal].every(Number.isFinite))return null;
  const cols=Math.ceil(doc.width/spacing)+1,rows=Math.ceil(doc.depth/spacing)+1;
  if(cols*rows>25000)return null;
  const point=(x,y)=>[-doc.width/2+x*doc.width/(cols-1),-doc.depth/2+y*doc.depth/(rows-1)];
