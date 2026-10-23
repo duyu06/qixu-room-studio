@@ -261,3 +261,13 @@ test('pressure boundary controls and custom floor texture persist in one studio 
  expect(doc.flowPressurePa).toBe(12);
  expect(doc.floorTexture).toContain('data:image/png;base64,');
 });
+
+test('CFD export offers validated solver input, not fabricated flow results',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="analysis"]').click();
+ const downloadPromise=page.waitForEvent('download');
+ await page.locator('#cfd-export').click();
+ const download=await downloadPromise;
+ expect(download.suggestedFilename()).toBe('qixu-openfoam-input.json');
+ await expect(page.locator('#cfd-result-status')).toContainText('尚无 OpenFOAM 结果');
+});
