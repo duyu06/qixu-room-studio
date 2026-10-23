@@ -9,7 +9,8 @@
   "dependencies": {
     "three": "0.186.1",
     "three-gpu-pathtracer": "0.0.27",
-    "suncalc": "2.1.1"
+    "suncalc": "2.1.1",
+    "web-ifc": "0.0.78"
   },
   "devDependencies": {
     "esbuild": "0.25.12"
