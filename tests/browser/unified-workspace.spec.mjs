@@ -232,3 +232,32 @@ test('wall PBR texture mode persists after scene redraw and reload',async({page}
  await page.locator('[data-view="3d"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('pressure boundary controls and custom floor texture persist in one studio project',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=3d');
+ await page.locator('[data-panel="analysis"]').click();
+ await page.locator('#flow-pressure').fill('12');
+ await page.locator('#flow-pressure').dispatchEvent('change');
+ await page.locator('#flow-inlet').fill('55');
+ await page.locator('#flow-inlet').dispatchEvent('change');
+ const key='qixu-studio-demo-sunlit-v1';
+ let doc=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ expect(doc.flowPressurePa).toBe(12);
+ expect(doc.flowInlet).toBeCloseTo(.55,2);
+ await page.locator('[data-panel="materials"]').click();
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL1WQAAAABJRU5ErkJggg==','base64');
+ await page.locator('#texture-file').setInputFiles({name:'wood.png',mimeType:'image/png',buffer:png});
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ doc=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ expect(doc.floorTexture).toBeFalsy();
+ await page.locator('#texture-floor').click();
+ await page.locator('#texture-file').setInputFiles({name:'wood.png',mimeType:'image/png',buffer:png});
+ await expect.poll(async()=>{
+   const stored=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+   return Boolean(stored.floorTexture?.startsWith('data:image/png;base64,'));
+ }).toBe(true);
+ await page.reload();
+ doc=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ expect(doc.flowPressurePa).toBe(12);
+ expect(doc.floorTexture).toContain('data:image/png;base64,');
+});
