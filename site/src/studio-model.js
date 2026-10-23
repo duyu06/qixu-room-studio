@@ -22,7 +22,7 @@ export function createProject(){
     {id:id(),a:[.8,-3.4],b:[.8,3.4]}
   ];
   return {schema:'qixu-studio',version:MODEL_VERSION,title:'我的第一个空间',width:12,depth:9,
-    wallHeight:2.8,thickness:.14,lightingMode:'day',wallPattern:'paint',floorPattern:'auto',textureRepeat:3,flowPressurePa:5,flowInlet:1,flowOutlet:1,floor:'#ded4c3',wallColor:'#fffaf0',reference:null,
+    wallHeight:2.8,thickness:.14,lightingMode:'day',wallPattern:'paint',floorPattern:'auto',textureRepeat:3,flowPressurePa:5,flowInlet:1,flowOutlet:1,airflowSource:'opening',airflowX:0,airflowZ:0,airflowSpread:1.5,floor:'#ded4c3',wallColor:'#fffaf0',reference:null,
     walls,openings:[
       {id:id(),kind:'door',wallId:walls[4].id,t:.52,width:.9,height:2.1,sill:0},
       {id:id(),kind:'door',wallId:walls[0].id,t:.48,width:.9,height:2.1,sill:0},
@@ -154,6 +154,10 @@ export function addFurniture(doc,type){
 export function validateProject(doc){
   if(!doc||doc.schema!=='qixu-studio'||doc.version!==1)return '不支持的项目格式';
   if(doc.textureRepeat!==undefined&&(!Number.isInteger(doc.textureRepeat)||doc.textureRepeat<1||doc.textureRepeat>12))return '贴图重复次数错误';
+  if(doc.airflowSource!==undefined&&!['opening','custom'].includes(doc.airflowSource))return '风源类型无效';
+  if(doc.airflowSpread!==undefined&&(!Number.isFinite(doc.airflowSpread)||doc.airflowSpread<.2||doc.airflowSpread>3))return '气流覆盖范围无效';
+  if(doc.airflowX!==undefined&&(!Number.isFinite(doc.airflowX)||Math.abs(doc.airflowX)>doc.width/2))return '风源 X 超出房间';
+  if(doc.airflowZ!==undefined&&(!Number.isFinite(doc.airflowZ)||Math.abs(doc.airflowZ)>doc.depth/2))return '风源 Z 超出房间';
   if(doc.flowPressurePa!==undefined&&(!Number.isFinite(doc.flowPressurePa)||doc.flowPressurePa<0||doc.flowPressurePa>100))return '边界压差错误';
   for(const key of ['flowInlet','flowOutlet'])if(doc[key]!==undefined&&(!Number.isFinite(doc[key])||doc[key]<0||doc[key]>1))return '门窗开度错误';
   for(const key of ['floorTexture','wallTexture'])if(doc[key]!==undefined&&
