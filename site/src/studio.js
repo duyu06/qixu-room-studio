@@ -47,7 +47,7 @@ function refresh(){
  if(issues.length)stat('⚠ '+issues.length+' 处家具重叠/墙体碰撞，请检查高亮家具');
  $('geometry-stats').textContent=doc.walls.length+' 段墙 · '+doc.openings.length+' 个门窗 · '+doc.furniture.length+' 件家具';
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
- draw();inspect();if(ready)renderThree();save();
+ draw();inspect();if(ready){renderThree();window.qixuSetLighting?.(doc.lightingMode||'day');}save();
 }
 function change(fn){
  const old=copy();
@@ -298,6 +298,7 @@ $('camera-top').addEventListener('click',()=>{
 });
 for(const b of document.querySelectorAll('[data-lighting]'))b.addEventListener('click',()=>{
  const mode=b.dataset.lighting;
+ change(()=>{doc.lightingMode=mode;});
  window.qixuSetLighting?.(mode);
  document.querySelectorAll('[data-lighting]').forEach(x=>x.classList.toggle('active',x===b));
  stat('3D 光照：'+b.textContent.trim());
@@ -523,8 +524,9 @@ function initThree(){
  sun.shadow.camera.far=100;sun.shadow.bias=-.00015;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
  const presets={day:{sun:2.7,ambient:1.15,color:0xffeed4,exposure:1.22},evening:{sun:1.45,ambient:.63,color:0xffb76d,exposure:1.35},showcase:{sun:2.4,ambient:1.8,color:0xffffff,exposure:1.3}};
  function applyLighting(mode){const p=presets[mode]||presets.day;sun.intensity=p.sun;ambient.intensity=p.ambient;sun.color.setHex(p.color);renderer.toneMappingExposure=p.exposure;}
- window.qixuSetLighting=mode=>{applyLighting(mode);localStorage.setItem('qixu-lighting-mode',mode);};
- applyLighting(localStorage.getItem('qixu-lighting-mode')||'day');
+ window.qixuSetLighting=mode=>{applyLighting(mode);};
+ applyLighting(doc.lightingMode||'day');
+ document.querySelectorAll('[data-lighting]').forEach(b=>b.classList.toggle('active',b.dataset.lighting===(doc.lightingMode||'day')));
  content=new THREE.Group();scene.add(content);
  const resize=()=>{
   const r=$('three-viewport').getBoundingClientRect();if(!r.width||!r.height)return;
