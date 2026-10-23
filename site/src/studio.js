@@ -567,14 +567,14 @@ function setView(name){
   b.classList.toggle('active',b.dataset.view===name);
   b.setAttribute('aria-pressed',String(b.dataset.view===name));
  });
- svg.hidden=name!=='2d';$('three-viewport').hidden=name!=='3d';
+ svg.toggleAttribute('hidden',name!=='2d');$('three-viewport').hidden=name!=='3d';
  $('mode-description').textContent=name==='2d'?'平面编辑 · 网格吸附':'3D 预览 · 拖动旋转 / 滚轮缩放';
  if(name==='3d'){
   try{initThree();renderThree();}
   catch(e){
     console.error('3D rendering failed',e);
     view='2d';ready=false;
-    svg.hidden=false;$('three-viewport').hidden=true;
+    svg.removeAttribute('hidden');$('three-viewport').hidden=true;
     document.querySelectorAll('[data-view]').forEach(b=>{
       b.classList.toggle('active',b.dataset.view==='2d');
       b.setAttribute('aria-pressed',String(b.dataset.view==='2d'));
