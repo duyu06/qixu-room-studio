@@ -131,6 +131,12 @@ function draw(){
    g.append(el('rect',{x:-f.width/2,y:-f.depth/2,width:f.width,height:f.depth,rx:.06,
      class:'furniture-rect'+(selection?.id===f.id?' selected':'')+(collisionIds.has(f.id)?' collision':'')}));
    g.append(el('text',{x:0,y:.06,class:'furniture-label'},FURNITURE[f.type].label));
+   if(selection?.id===f.id&&selection.kind==='furniture'){
+     const handleY=-f.depth/2-.40;
+     g.append(line(0,-f.depth/2,0,handleY+.11,{class:'rotation-guide','pointer-events':'none'}));
+     g.append(el('circle',{cx:0,cy:handleY,r:.17,class:'rotation-handle',
+       'data-rotate-id':f.id,'aria-label':'旋转家具','role':'button'}));
+   }
    world.append(g);
  }
  if(anchor&&current&&tool==='wall'){
@@ -208,6 +214,17 @@ svg.addEventListener('pointerdown',e=>{
   else {anchor=q;current=q;draw();stat('已选择起点，点击第二点完成墙体');}
   e.preventDefault();return;
  }
+ const rotate=e.target.closest('[data-rotate-id]');
+ if(rotate&&tool==='select'){
+   const f=doc.furniture.find(x=>x.id===rotate.dataset.rotateId);
+   if(f){
+     selection={kind:'furniture',id:f.id};
+     drag={type:'rotation',id:f.id,before:copy(),fromRotation:f.rotation,moved:false};
+     try{svg.setPointerCapture(e.pointerId);}catch{}
+     e.preventDefault();
+   }
+   return;
+ }
  const endpoint=e.target.closest('[data-endpoint-wall]');
  if(endpoint && tool==='select'){
    const w=doc.walls.find(w=>w.id===endpoint.dataset.endpointWall);
@@ -239,6 +256,20 @@ svg.addEventListener('pointermove',e=>{
  current=screenPoint(e);if(!current)return;
  if(tool==='wall'&&anchor){current=snapPosition(current,doc,.1,{disable:e.altKey});draw();return;}
  if(!drag)return;
+ if(drag.type==='rotation'){
+   const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
+   const dx=current[0]-f.x,dy=current[1]-f.z;
+   if(Math.hypot(dx,dy)<.1)return;
+   let angle=Math.atan2(dy,dx)+Math.PI/2;
+   if(!e.altKey){
+     const step=(e.shiftKey?15:5)*Math.PI/180;
+     angle=Math.round(angle/step)*step;
+   }
+   f.rotation=Math.atan2(Math.sin(angle),Math.cos(angle));
+   drag.moved=true;draw();
+   stat('家具旋转 '+Math.round(f.rotation*180/Math.PI)+'° · Shift 15°吸附 / Alt 自由旋转');
+   e.preventDefault();return;
+ }
  const next=[drag.from[0]+current[0]-drag.p[0],drag.from[1]+current[1]-drag.p[1]];
  if(drag.type==='endpoint'){
    const w=doc.walls.find(x=>x.id===drag.id);if(!w)return;
