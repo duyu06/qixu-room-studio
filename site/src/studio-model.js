@@ -41,6 +41,22 @@ export function snapPosition(p,doc,grid=.1,{excludePoint=null,excludeWallId=null
    if(distance<bestDist){best=[...end];bestDist=distance;}
  }
  if(best)return best;
+ // Intersections are a stronger target than generic line projections.
+ for(let i=0;i<doc.walls.length;i++)for(let j=i+1;j<doc.walls.length;j++){
+   const a=doc.walls[i],b=doc.walls[j];
+   if(a.id===excludeWallId||b.id===excludeWallId)continue;
+   const [ax,az]=a.a,[bx,bz]=a.b,[cx,cz]=b.a,[dx,dz]=b.b;
+   const rx=bx-ax,rz=bz-az,sx=dx-cx,sz=dz-cz,den=rx*sz-rz*sx;
+   if(Math.abs(den)<1e-9)continue;
+   const t=((cx-ax)*sz-(cz-az)*sx)/den;
+   const u=((cx-ax)*rz-(cz-az)*rx)/den;
+   if(t<0||t>1||u<0||u>1)continue;
+   const intersection=[ax+t*rx,az+t*rz];
+   if(excluded(intersection))continue;
+   const dist=Math.hypot(p[0]-intersection[0],p[1]-intersection[1]);
+   if(dist<bestDist){best=intersection;bestDist=dist;}
+ }
+ if(best)return best.map(v=>Number(v.toFixed(3)));
  // Snap to a wall axis without shifting away from its physical centerline.
  best=null;bestDist=.12;
  for(const wall of doc.walls){
