@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 test('main editor boots as 3D and exposes editable tools', async ({page})=>{
   const pageErrors=[];
   page.on('pageerror',error=>pageErrors.push(error.message));
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page).toHaveTitle(/栖序/);
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   await expect(page.locator('#fatal')).toBeHidden();
@@ -13,7 +13,7 @@ test('main editor boots as 3D and exposes editable tools', async ({page})=>{
 });
 
 test('unrelated picture of same K4 size must not activate K4 walls',async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   const data=await page.evaluate(()=>{
     const c=document.createElement('canvas');c.width=474;c.height=514;
@@ -27,7 +27,7 @@ test('unrelated picture of same K4 size must not activate K4 walls',async ({page
 });
 
 test('invalid uploaded image shows recovery feedback',async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   await page.locator('#photo-input').setInputFiles({name:'bad.png',mimeType:'image/png',buffer:Buffer.from('not a png')});
   await expect(page.locator('#plan-status')).toContainText('无法解码');
@@ -39,7 +39,7 @@ test('high quality page explains missing saved floorplan',async ({page})=>{
 });
 
 test('privacy clear action exists and requires confirmation',async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   const button=page.getByRole('button',{name:'删除本机保存的户型与图片'});
   await expect(button).toBeVisible();
@@ -49,7 +49,7 @@ test('privacy clear action exists and requires confirmation',async ({page})=>{
 });
 
 test('full blueprint export retains source and geometry',async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   const data=await page.evaluate(()=>{
     const c=document.createElement('canvas');c.width=474;c.height=514;
@@ -70,7 +70,7 @@ test('full blueprint export retains source and geometry',async ({page})=>{
 });
 
 test('measured scale is stored in the complete blueprint project',async ({page})=>{
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:22000});
   const data=await page.evaluate(()=>{
     const canvas=document.createElement('canvas');canvas.width=474;canvas.height=514;
@@ -110,7 +110,7 @@ test('3D editor works without external script access',async ({page})=>{
     foreign.push(url.href);
     return route.abort('blockedbyclient');
   });
-  await page.goto('/');
+  await page.goto('/?legacy=1');
   await expect(page.locator('#viewport canvas')).toBeVisible({timeout:25000});
   await expect(page.locator('#fatal')).toBeHidden();
   expect(foreign.filter(x=>/\.js(\?|$)|\/npm\/|\/modules\//.test(x))).toEqual([]);
