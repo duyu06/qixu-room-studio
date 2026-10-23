@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {airflowRoute} from '../site/src/studio-airflow-path.js';
+const wall={id:'divider',a:[0,-2],b:[0,2]};
+const make=(openings)=>({width:8,depth:6,walls:[wall],openings});
+const left={id:'in',kind:'door',wallId:'divider',t:.25,width:.9};
+const right={id:'out',kind:'window',wallId:'divider',t:.75,width:.9};
+assert.equal(airflowRoute(make([left])),null);
+const path=airflowRoute(make([left,right]));
+assert.ok(path&&path.length>1,'two accessible openings should yield a route');
+assert.ok(path.every(p=>Number.isFinite(p[0])&&Number.isFinite(p[1])));
+const split=make([left,right]);
+split.walls.push({id:'other',a:[-1,-1],b:[1,-1]});
+const routed=airflowRoute(split);
+assert.ok(routed&&routed.length>=2,'route must avoid solid walls while finding a passage');
+console.log('Airflow route wall and opening cases pass');
