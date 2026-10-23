@@ -113,7 +113,7 @@ test('moving furniture updates 3D objects without rebuilding static room geometr
  const count=()=>page.locator('#three-viewport').getAttribute('data-scene-rebuilds');
  const initial=Number(await count());
  await page.locator('[data-view="2d"]').click();
- const furniture=page.locator('[data-furniture-id]').first();
+ const furniture=page.locator('[data-furniture-id] rect').first();
  await expect(furniture).toBeVisible();
  await furniture.click();
  const x=page.locator('[data-prop="x"]');
@@ -129,7 +129,7 @@ test('moving furniture updates 3D objects without rebuilding static room geometr
 
 test('2D furniture rotation handle rotates and persists into 3D',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=2d');
- const furniture=page.locator('[data-furniture-id]').first();
+ const furniture=page.locator('[data-furniture-id] rect').first();
  await expect(furniture).toBeVisible();
  await furniture.click();
  const handle=page.locator('[data-rotate-id]').first();
@@ -147,6 +147,6 @@ test('2D furniture rotation handle rotates and persists into 3D',async({page})=>
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
  await page.reload();
  await page.locator('[data-view="2d"]').click();
- await page.locator('[data-furniture-id]').first().click();
+ await page.locator('[data-furniture-id] rect').first().click();
  expect(Number(await page.locator('[data-prop="angle"]').inputValue())).toBeCloseTo(after,0);
 });
