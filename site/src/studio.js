@@ -241,6 +241,8 @@ function inspect(){
    field('高度（米）','wallHeightSingle',w.height??doc.wallHeight,2,6,.1)+'</div>'+
    '<div class="props-grid">'+field('起点 X','wallAX',w.a[0].toFixed(2),-100,100)+field('起点 Z','wallAZ',w.a[1].toFixed(2),-100,100)+'</div>'+
    '<div class="props-grid"><label>墙体正面色<input type="color" data-wall-color="faceAColor" value="'+(w.faceAColor||doc.wallColor)+'"></label><label>墙体背面色<input type="color" data-wall-color="faceBColor" value="'+(w.faceBColor||doc.wallColor)+'"></label></div>'+
+   '<div class="props-grid"><label>正面纹理<select data-wall-face-pattern="faceAPattern"><option value="paint">乳胶漆</option><option value="plaster">肌理灰泥</option><option value="wallpaper">墙纸</option></select></label><label>背面纹理<select data-wall-face-pattern="faceBPattern"><option value="paint">乳胶漆</option><option value="plaster">肌理灰泥</option><option value="wallpaper">墙纸</option></select></label></div>'+
+   '<div class="props-grid">'+field('正面纹理密度','faceARepeat',w.faceARepeat??doc.textureRepeat??3,1,12,1)+field('背面纹理密度','faceBRepeat',w.faceBRepeat??doc.textureRepeat??3,1,12,1)+'</div>'+
    '<label>墙体图层<select id="wall-layer"><option value="structure">主体结构</option><option value="partition">隔断</option><option value="decor">装饰墙</option></select></label>'+
    '<label class="check-row"><input type="checkbox" id="wall-locked" '+(w.locked?'checked':'')+'> 锁定墙体，阻止编辑</label>'+
    '<p class="muted">墙面颜色和图层独立保存；锁定后不能修改墙体几何。'+
@@ -267,6 +269,10 @@ function inspect(){
    layer.addEventListener('change',()=>change(()=>{doc.walls.find(w=>w.id===id).layer=layer.value;}));
   }
   panel.querySelector('#wall-locked')?.addEventListener('change',e=>change(()=>{doc.walls.find(w=>w.id===id).locked=e.target.checked;}));
+  panel.querySelectorAll('[data-wall-face-pattern]').forEach(input=>{
+   input.value=wall[input.dataset.wallFacePattern]??doc.wallPattern??'paint';
+   input.addEventListener('change',()=>change(()=>{doc.walls.find(w=>w.id===id)[input.dataset.wallFacePattern]=input.value;}));
+  });
   panel.querySelectorAll('[data-wall-color]').forEach(input=>input.addEventListener('change',()=>change(()=>{
    doc.walls.find(w=>w.id===id)[input.dataset.wallColor]=input.value;
   })));
@@ -293,6 +299,9 @@ function inspect(){
    if(selection.kind==='opening'){
     const o=doc.openings.find(x=>x.id===selection.id),map={openWidth:'width',openHeight:'height',openSill:'sill'};
     setOpeningDimension(doc,o,{[map[key]]:val});return;
+   }
+   if(selection.kind==='wall'&&['faceARepeat','faceBRepeat'].includes(key)){
+    doc.walls.find(w=>w.id===selection.id)[key]=val;return;
    }
    if(selection.kind==='wall'&&doc.walls.find(w=>w.id===selection.id)?.locked)throw Error('墙体已锁定，请先解锁');
    if(selection.kind==='wall'&&['wallThickness','wallHeightSingle','wallAngle','wallAX','wallAZ'].includes(key)){
@@ -967,8 +976,10 @@ function renderThree(){
   const material=wallMaterial(wallTone,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
-  const faceA=wall.faceAColor?wallMaterial(wall.faceAColor,'paint',null,1):material;
-  const faceB=wall.faceBColor?wallMaterial(wall.faceBColor,'paint',null,1):material;
+  const faceA=wallMaterial(wall.faceAColor||wallTone,wall.faceAPattern||doc.wallPattern||'paint',
+    doc.wallTexture||null,wall.faceARepeat??doc.textureRepeat??3);
+  const faceB=wallMaterial(wall.faceBColor||wallTone,wall.faceBPattern||doc.wallPattern||'paint',
+    doc.wallTexture||null,wall.faceBRepeat??doc.textureRepeat??3);
   for(const face of [faceA,faceB]){
    face.transparent=fadeWall;face.opacity=fadeWall?.2:1;face.depthWrite=!fadeWall;face.side=THREE.DoubleSide;
   }
