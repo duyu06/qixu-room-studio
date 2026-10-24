@@ -11,3 +11,11 @@
 .insight-grid dd{font-size:17px;font-weight:650;margin:0;color:#315744;font-variant-numeric:tabular-nums}
 .insight-note{font-size:11px;line-height:1.8;margin:14px 0;color:#718476}
 @media(max-width:850px){.workspace-caption{display:none}}
+
+/* Material preview cards use the existing materials panel and remain keyboard-selectable. */
+.material-preset-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0;max-height:260px;overflow:auto}
+.material-preset-card{display:flex;align-items:center;gap:7px;text-align:left;padding:7px;border:1px solid var(--line,#d5dbd5);border-radius:9px;background:var(--surface,#fff);cursor:grab;min-width:0}
+.material-preset-card.active{outline:2px solid #648e82;outline-offset:-2px}
+.material-preset-thumb{display:block;width:42px;height:42px;min-width:42px;border-radius:7px;border:1px solid #0002;background-size:cover}
+.material-preset-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.material-preset-card small{font-size:10px;opacity:.65;white-space:nowrap}
