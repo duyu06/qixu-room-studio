@@ -240,7 +240,7 @@ function inspect(){
    field('厚度（米）','wallThickness',w.thickness??doc.thickness,.06,.6,.01)+
    field('高度（米）','wallHeightSingle',w.height??doc.wallHeight,2,6,.1)+'</div>'+
    '<div class="props-grid">'+field('起点 X','wallAX',w.a[0].toFixed(2),-100,100)+field('起点 Z','wallAZ',w.a[1].toFixed(2),-100,100)+'</div>'+
-   '<div class="props-grid"><label>墙体正面色<input type="color" data-wall-color="faceAColor" value="'+(w.faceAColor||'#e8ddd1')+'"></label><label>墙体背面色<input type="color" data-wall-color="faceBColor" value="'+(w.faceBColor||'#f8f4eb')+'"></label></div>'+
+   '<div class="props-grid"><label>墙体正面色<input type="color" data-wall-color="faceAColor" value="'+(w.faceAColor||doc.wallColor)+'"></label><label>墙体背面色<input type="color" data-wall-color="faceBColor" value="'+(w.faceBColor||doc.wallColor)+'"></label></div>'+
    '<label>墙体图层<select id="wall-layer"><option value="structure">主体结构</option><option value="partition">隔断</option><option value="decor">装饰墙</option></select></label>'+
    '<label class="check-row"><input type="checkbox" id="wall-locked" '+(w.locked?'checked':'')+'> 锁定墙体，阻止编辑</label>'+
    '<p class="muted">墙面颜色和图层独立保存；锁定后不能修改墙体几何。'+
@@ -969,6 +969,9 @@ function renderThree(){
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   const faceA=wall.faceAColor?wallMaterial(wall.faceAColor,'paint',null,1):material;
   const faceB=wall.faceBColor?wallMaterial(wall.faceBColor,'paint',null,1):material;
+  for(const face of [faceA,faceB]){
+   face.transparent=fadeWall;face.opacity=fadeWall?.2:1;face.depthWrite=!fadeWall;face.side=THREE.DoubleSide;
+  }
   const boxFaces=[material,material,material,material,faceA,faceB];
   for(const piece of wallPieces(doc,wall)){
    buildBox(group,boxFaces,piece.end-piece.start,piece.top-piece.bottom,wall.thickness??doc.thickness,
