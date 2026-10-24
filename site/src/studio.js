@@ -182,7 +182,7 @@ function draw(){
    }
  }
  for(const o of doc.openings){
-   const w=doc.walls.find(x=>x.id===o.wallId);if(!w)continue;
+   const w=doc.walls.find(x=>x.id===o.wallId);if(!w||!visibleWallLayers.has(w.layer||'structure'))continue;
    const p=interpolated(w,o.t),L=length(w),dx=(w.b[0]-w.a[0])/L,dy=(w.b[1]-w.a[1])/L;
    const a=[p[0]-dx*o.width/2,p[1]-dy*o.width/2];
    const b=[p[0]+dx*o.width/2,p[1]+dy*o.width/2];
