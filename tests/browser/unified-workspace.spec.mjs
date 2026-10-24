@@ -520,3 +520,25 @@ test('wall front and back PBR controls update independently in existing inspecto
  await page.locator('[data-view="split"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('saved wall material gallery shows searchable draggable categorized thumbnails',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.evaluate(()=>localStorage.setItem('qixu-wall-material-presets-v1',JSON.stringify([
+  {id:'mat-gallery-test',name:'奶油灰泥',values:{Color:'#ddccbb',Pattern:'plaster',Roughness:.75}},
+  {id:'mat-gallery-paint',name:'静谧乳胶漆',values:{Color:'#ddeedd',Pattern:'paint'}}
+ ])));
+ await page.reload();
+ await page.locator('[data-panel="materials"]').click();
+ const gallery=page.locator('#material-preset-gallery');
+ await expect(gallery.locator('.material-preset-card')).toHaveCount(2);
+ await expect(gallery.locator('.material-preset-thumb')).toHaveCount(2);
+ await expect(gallery.locator('[data-material-preset-id="mat-gallery-test"]')).toHaveAttribute('draggable','true');
+ await page.locator('#material-preset-category').selectOption('plaster');
+ await expect(gallery.locator('.material-preset-card')).toHaveCount(1);
+ await page.locator('#material-preset-search').fill('不存在');
+ await expect(gallery.locator('.material-preset-card')).toHaveCount(0);
+ await page.locator('#material-preset-search').fill('奶油');
+ await expect(gallery.locator('.material-preset-card')).toHaveCount(1);
+ await gallery.locator('.material-preset-card').click();
+ await expect(page.locator('#saved-wall-materials')).toHaveValue('mat-gallery-test');
+});
