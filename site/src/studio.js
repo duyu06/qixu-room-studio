@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
-import {snapFurniture} from './studio-alignment.js';
+import {snapFurniture,snapFurnitureToWalls} from './studio-alignment.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -378,10 +378,15 @@ svg.addEventListener('pointermove',e=>{
  const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
  const point=snapPosition(next,doc,.1,{disable:e.altKey});
  const aligned=(!e.altKey&&$('snap-furniture').checked)?snapFurniture(doc,f.id,point[0],point[1]):{x:point[0],z:point[1],guides:[]};
- alignmentGuides=aligned.guides;
+ const wallSnap=(!e.altKey&&$('snap-walls').checked)?snapFurnitureToWalls(doc,f.id,aligned.x,aligned.z):{...aligned,guides:[]};
+ aligned.x=wallSnap.x;aligned.z=wallSnap.z;
+ alignmentGuides=[...aligned.guides,...wallSnap.guides];
  f.x=clamp(aligned.x,-doc.width/2+f.width/2,doc.width/2-f.width/2);
  f.z=clamp(aligned.z,-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
- drag.moved=true;draw();e.preventDefault();
+ drag.moved=true;draw();
+ const collisions=furnitureDiagnostics(doc).filter(issue=>issue.id===f.id);
+ if(collisions.length)stat('⚠ 家具与墙体或其他家具碰撞；可继续移动调整');
+ e.preventDefault();
 });
 const drop=()=>{
  if(!drag)return;
