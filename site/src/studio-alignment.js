@@ -59,3 +59,11 @@ export function snapFurnitureToWalls(doc,movingId,x,z,{threshold=.18,clearance=.
  }
  return {x:best.x,z:best.z,guides:best.guide?[best.guide]:[]};
 }
+
+export function distributeFurniture(doc,ids,axis='x'){
+ const items=doc.furniture.filter(f=>ids.includes(f.id)).sort((a,b)=>a[axis]-b[axis]);
+ if(!['x','z'].includes(axis)||items.length<3)throw Error('至少选择三件家具');
+ const first=items[0][axis],last=items.at(-1)[axis],step=(last-first)/(items.length-1);
+ for(let i=1;i<items.length-1;i++)items[i][axis]=first+step*i;
+ return items;
+}
