@@ -426,6 +426,7 @@ test('drag a furniture catalog item directly into the 2D plan without changing p
  const before=await page.locator('[data-furniture-id]').count();
  await item.dragTo(page.locator('#plan-svg'),{targetPosition:{x:350,y:270}});
  await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
+ await expect(page.locator('.furniture-drop-preview')).toHaveCount(0);
  await expect(page.locator('#plan-svg')).toBeVisible();
  await expect(page).toHaveURL(/studio.html\?template=sunlit/);
  await page.reload();
