@@ -167,7 +167,7 @@ function draw(){
  });
  const collisionIds=new Set(furnitureDiagnostics(doc).map(x=>x.id));
  for(const wall of doc.walls){
-   if(!visibleWallLayers.has(wall.layer||'structure'))continue;
+   if(!visibleWallLayers.has((wall.layer==='IFC_WALL'?'structure':wall.layer||'structure')))continue;
    const picked=selection?.id===wall.id;
    world.append(line(...wall.a,...wall.b,{class:'wall-base'+(picked?' selected':''),'stroke-width':wall.thickness??doc.thickness}));
    world.append(line(...wall.a,...wall.b,{class:'wall-click','data-wall-id':wall.id}));
@@ -182,7 +182,7 @@ function draw(){
    }
  }
  for(const o of doc.openings){
-   const w=doc.walls.find(x=>x.id===o.wallId);if(!w||!visibleWallLayers.has(w.layer||'structure'))continue;
+   const w=doc.walls.find(x=>x.id===o.wallId);if(!w||!visibleWallLayers.has((w.layer==='IFC_WALL'?'structure':w.layer||'structure')))continue;
    const p=interpolated(w,o.t),L=length(w),dx=(w.b[0]-w.a[0])/L,dy=(w.b[1]-w.a[1])/L;
    const a=[p[0]-dx*o.width/2,p[1]-dy*o.width/2];
    const b=[p[0]+dx*o.width/2,p[1]+dy*o.width/2];
@@ -263,7 +263,7 @@ function inspect(){
  if(selection?.kind==='wall'){
   const id=selection.id,wall=doc.walls.find(w=>w.id===id);
   const layer=panel.querySelector('#wall-layer');if(layer){
-   layer.value=wall.layer||'structure';
+   layer.value=(wall.layer==='IFC_WALL'?'structure':wall.layer||'structure');
    layer.addEventListener('change',()=>change(()=>{doc.walls.find(w=>w.id===id).layer=layer.value;}));
   }
   panel.querySelector('#wall-locked')?.addEventListener('change',e=>change(()=>{doc.walls.find(w=>w.id===id).locked=e.target.checked;}));
@@ -950,7 +950,7 @@ function renderThree(){
     new THREE.MeshBasicMaterial({map:texture,transparent:true,opacity:.58,depthWrite:false}));
   ref.rotation.x=-Math.PI/2;ref.position.y=.026;content.add(ref);
  }
- for(const junction of wallJunctions({...doc,walls:doc.walls.filter(w=>visibleWallLayers.has(w.layer||'structure'))})){
+ for(const junction of wallJunctions({...doc,walls:doc.walls.filter(w=>visibleWallLayers.has((w.layer==='IFC_WALL'?'structure':w.layer||'structure')))})){
   const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(junction.thickness,junction.height,junction.thickness),material);
   mesh.position.set(junction.x,junction.height/2,junction.z);mesh.castShadow=true;mesh.receiveShadow=true;content.add(mesh);
@@ -962,7 +962,7 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  if(!visibleWallLayers.has(wall.layer||'structure'))continue;
+  if(!visibleWallLayers.has((wall.layer==='IFC_WALL'?'structure':wall.layer||'structure')))continue;
   const wallTone={exterior:'#e7ded2',interior:doc.wallColor,partition:'#dceae8'}[wall.wallType]||doc.wallColor;
   const material=wallMaterial(wallTone,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
