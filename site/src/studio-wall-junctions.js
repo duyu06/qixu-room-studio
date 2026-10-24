@@ -14,7 +14,8 @@ export function wallJunctions(doc,{tolerance=.018}={}){
    return t>=-tolerance/Math.sqrt(d2)&&t<=1+tolerance/Math.sqrt(d2)&&distance(point,projection)<tolerance;
   });
   if(joining.length<2)continue;
-  junctions.push({x:point[0],z:point[1],thickness:Math.max(...joining.map(w=>w.thickness??doc.thickness)),height:Math.min(...joining.map(w=>w.height??doc.wallHeight)),count:joining.length});
+  const primary=[...joining].sort((a,b)=>(b.thickness??doc.thickness)-(a.thickness??doc.thickness)||String(a.id).localeCompare(String(b.id)))[0];
+  junctions.push({x:point[0],z:point[1],thickness:Math.max(...joining.map(w=>w.thickness??doc.thickness)),height:Math.min(...joining.map(w=>w.height??doc.wallHeight)),count:joining.length,primaryWallId:primary.id});
  }
  return junctions;
 }
