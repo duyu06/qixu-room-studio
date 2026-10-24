@@ -317,7 +317,7 @@ function inspect(){
   });
  }
  panel.querySelector('[data-delete]')?.addEventListener('click',()=>{
-  const target=selection.id;change(()=>deleteObject(doc,target));selection=null;refresh();
+  const target=selection.id;if(selection.kind==='wall'&&doc.walls.find(w=>w.id===target)?.locked){notify('墙体已锁定，请先解锁');return;}change(()=>deleteObject(doc,target));selection=null;refresh();
  });
  panel.querySelector('[data-duplicate]')?.addEventListener('click',()=>{
   const f=doc.furniture.find(x=>x.id===selection.id);
@@ -954,8 +954,11 @@ function renderThree(){
   const material=wallMaterial(wallTone,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
+  const faceA=wall.faceAColor?wallMaterial(wall.faceAColor,'paint',null,1):material;
+  const faceB=wall.faceBColor?wallMaterial(wall.faceBColor,'paint',null,1):material;
+  const boxFaces=[material,material,material,material,faceA,faceB];
   for(const piece of wallPieces(doc,wall)){
-   buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,wall.thickness??doc.thickness,
+   buildBox(group,boxFaces,piece.end-piece.start,piece.top-piece.bottom,wall.thickness??doc.thickness,
      (piece.start+piece.end)/2,(piece.top+piece.bottom)/2,0);
   }
   content.add(group);
