@@ -257,7 +257,7 @@ function inspect(){
   field('X 坐标','x',f.x.toFixed(2),-100,100)+field('Z 坐标','z',f.z.toFixed(2),-100,100)+
   field('宽度','fWidth',f.width,.1,20)+field('深度','fDepth',f.depth,.1,20)+
   field('高度','fHeight',f.height,.01,20)+field('旋转度数','angle',(f.rotation*180/Math.PI).toFixed(1),-360,360,1)+
-  '</div><div class="props-actions"><button data-duplicate>复制</button><button data-delete class="danger">删除</button></div>';
+  '</div><div class="props-actions"><button type="button" data-rotate-left>↶ 左转 90°</button><button type="button" data-rotate-right>↷ 右转 90°</button><button data-duplicate>复制</button><button data-delete class="danger">删除</button></div>';
  }
  panel.innerHTML=html;
  if(selection?.kind==='wall'){
