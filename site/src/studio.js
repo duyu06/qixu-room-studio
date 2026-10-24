@@ -229,9 +229,31 @@ const field=(title,key,value,min,max,step=.1)=>
 const MATERIAL_PRESETS_KEY='qixu-wall-material-presets-v1';
 function readWallPresets(){try{const found=JSON.parse(localStorage.getItem(MATERIAL_PRESETS_KEY)||'[]');return Array.isArray(found)?found.slice(0,40):[];}catch{return [];}}
 function displayWallPresets(){
- const select=$('saved-wall-materials');const value=select.value;select.replaceChildren(new Option('选择材质预设',''));
- for(const item of readWallPresets())select.add(new Option(item.name,item.id));
- if([...select.options].some(o=>o.value===value))select.value=value;
+ const select=$('saved-wall-materials'),gallery=$('material-preset-gallery'),previous=select.value;
+ const search=$('material-preset-search').value.trim().toLowerCase(),category=$('material-preset-category').value;
+ select.replaceChildren(new Option('选择材质预设',''));gallery.replaceChildren();
+ for(const item of readWallPresets()){
+  const values=item.values||{},kind=values.Pattern||'paint',group=['paint','plaster','wallpaper'].includes(kind)?kind:'custom';
+  if(category&&category!==group)continue;
+  if(search&&!((item.name||'')+' '+kind).toLowerCase().includes(search))continue;
+  select.add(new Option(item.name,item.id));
+  const card=document.createElement('button');card.type='button';card.className='material-preset-card';card.draggable=true;card.title='拖放到 2D 墙体，Shift 应用背面';
+  card.dataset.materialPresetId=item.id;
+  const thumb=document.createElement('span');thumb.className='material-preset-thumb';
+  thumb.style.backgroundColor=/^#[0-9a-f]{6}$/i.test(values.Color||'')?values.Color:'#e2ddd5';
+  thumb.style.backgroundImage=kind==='wallpaper'?'repeating-linear-gradient(90deg,transparent 0 7px,#00000012 8px 9px)':kind==='plaster'?'radial-gradient(circle at 30% 40%,#ffffff72,transparent 55%)':'none';
+  const name=document.createElement('span');name.className='material-preset-name';name.textContent=item.name;
+  const meta=document.createElement('small');meta.textContent={paint:'乳胶漆',plaster:'灰泥',wallpaper:'墙纸',custom:'自定义'}[group];
+  card.append(thumb,name,meta);
+  card.addEventListener('click',()=>{select.value=item.id;displayWallPresetHighlight();});
+  card.addEventListener('dragstart',e=>{e.dataTransfer.setData('application/x-qixu-material',item.id);e.dataTransfer.effectAllowed='copy';});
+  gallery.append(card);
+ }
+ if([...select.options].some(o=>o.value===previous))select.value=previous;
+ displayWallPresetHighlight();
+}
+function displayWallPresetHighlight(){
+ $('material-preset-gallery').querySelectorAll('.material-preset-card').forEach(card=>card.classList.toggle('active',card.dataset.materialPresetId===$('saved-wall-materials').value));
 }
 function chosenWall(){return selection?.kind==='wall'?doc.walls.find(w=>w.id===selection.id):null;}
 for(const [button,side] of [['save-face-a-preset','faceA'],['save-face-b-preset','faceB']]){
@@ -257,6 +279,19 @@ $('delete-wall-preset').addEventListener('click',()=>{
  catch{notify('删除预设失败');}
 });
 displayWallPresets();
+$('material-preset-search').addEventListener('input',displayWallPresets);
+$('material-preset-category').addEventListener('change',displayWallPresets);
+$('saved-wall-materials').addEventListener('change',displayWallPresetHighlight);
+svg.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('application/x-qixu-material')){e.preventDefault();e.dataTransfer.dropEffect='copy';}});
+svg.addEventListener('drop',e=>{
+ const id=e.dataTransfer.getData('application/x-qixu-material');if(!id)return;
+ e.preventDefault();const item=readWallPresets().find(p=>p.id===id);
+ const point=screenPoint(e),nearest=point&&nearestWall(doc,point);
+ if(!item||!nearest||nearest.distance>.35){notify('请拖到 2D 墙体中心线');return;}
+ if(nearest.wall.locked){notify('墙体已锁定，请先解锁');return;}
+ const side=e.shiftKey?'faceB':'faceA';
+ if(change(()=>{applyFacePreset(nearest.wall,side,item.values);selection={kind:'wall',id:nearest.wall.id};}))notify('材质已应用到墙体'+(side==='faceA'?'正面':'背面'));
+});
 function inspect(){
  const panel=$('property-body');let html='';
  if(!selection){
