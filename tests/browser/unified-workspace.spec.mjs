@@ -407,3 +407,13 @@ test('editor exposes alignment snapping and keyboard nudge in shared 2D/3D mode'
  await expect.poll(async()=>Number(await page.locator('[data-prop="x"]').inputValue())).toBeGreaterThan(before);
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('one-click inferred modeling reports assumptions and opens live dual view',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="structure"]').click();
+ await page.locator('#infer-3d-model').click();
+ await expect(page.locator('#inferred-model-report')).toContainText('推算');
+ await expect(page.locator('#canvas-wrap')).toHaveClass(/dual-view/);
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
