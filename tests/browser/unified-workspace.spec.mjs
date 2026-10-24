@@ -507,3 +507,16 @@ test('wall face patterns and repeats independently persist in property inspector
  await page.locator('[data-view="split"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('wall front and back PBR controls update independently in existing inspector',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-wall-id]').first().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:270});
+ const front=page.locator('[data-prop="faceARoughness"]');
+ const back=page.locator('[data-prop="faceBRoughness"]');
+ await expect(front).toBeVisible();
+ await front.fill('0.3');await front.dispatchEvent('change');
+ await expect(front).toHaveValue('0.3');
+ await expect(back).toHaveValue('0.94');
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
