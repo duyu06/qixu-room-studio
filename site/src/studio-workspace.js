@@ -1,5 +1,6 @@
 import {demoId,projectStorageKey,renderLink} from './qixu-routes.js';
-import {validateProject,length} from './studio-model.js';
+import {validateProject,length,interpolated} from './studio-model.js';
+import {BAGUA,directionRecord} from './feng-model.js';
 
 const $=id=>document.getElementById(id);
 const demo=demoId(new URLSearchParams(location.search).get('template'));
@@ -43,6 +44,34 @@ function showAnalysis(){
  const label=document.createElement('p');label.className='insight-note';
  label.textContent='实际可使用面积需确认墙体是否形成封闭房间；画布包络面积不可用作房地产测绘面积。';
  dest.append(dl,msg,label);
+ // Reuse the existing cultural orientation library; do not create a second Feng engine.
+ const section=document.createElement('section');section.className='qixu-direction-insights';
+ const title=document.createElement('h3');title.textContent='传统八方 · 当前户型';
+ const advisory=document.createElement('p');advisory.className='insight-note';
+ advisory.textContent='方位以画布上方为假定北向，未经实测罗盘校准；下方仅为传统文化解释，不等于物理气流或磁场。';
+ const compass=document.createElement('div');compass.className='qixu-compass-grid';
+ for(const item of BAGUA){
+   const button=document.createElement('button');button.type='button';
+   button.textContent=item.glyph+' '+item.direction;button.title=item.meaning;
+   button.addEventListener('click',()=>{detail.textContent=item.meaning+' '+item.placement;});
+   compass.append(button);
+ }
+ const detail=document.createElement('p');detail.className='insight-note';
+ detail.textContent='选择方位查看对应的传统象征与家具布置建议。';
+ section.append(title,advisory,compass,detail);
+ if(doors.length){
+   const first=doors[0],wall=doc.walls.find(w=>w.id===first.wallId);
+   if(wall){
+     const p=interpolated(wall,first.t);
+     const bearing=directionRecord(p[0],p[1]);
+     if(bearing){
+       const doorInfo=document.createElement('p');doorInfo.className='insight-note';
+       doorInfo.textContent='主门位置（按首个门洞推测）：'+bearing.direction+'方位 · '+bearing.trigram+'。可在 2D 户型中进一步核对。';
+       section.append(doorInfo);
+     }
+   }
+ }
+ dest.append(section);
 
 }
 function showRender(force=false){

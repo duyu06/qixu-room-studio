@@ -11,3 +11,5 @@
 .insight-grid dd{font-size:17px;font-weight:650;margin:0;color:#315744;font-variant-numeric:tabular-nums}
 .insight-note{font-size:11px;line-height:1.8;margin:14px 0;color:#718476}
 @media(max-width:850px){.workspace-caption{display:none}}
+
+.qixu-direction-insights{margin-top:15px;padding-top:14px;border-top:1px solid #d9e5d9}.qixu-direction-insights h3{font-size:13px;color:#45604c;margin:0 0 8px}.qixu-compass-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:12px 0}.qixu-compass-grid button{border:1px solid #d7e4d7;border-radius:8px;padding:9px 2px;background:#f7faf5;color:#48664f;font-size:11px}.qixu-compass-grid button:hover,.qixu-compass-grid button:focus-visible{background:#e5f0e7;border-color:#8daf95}.qixu-direction-insights .insight-note{font-size:11px;line-height:1.7;color:#778879}
