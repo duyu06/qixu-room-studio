@@ -483,8 +483,7 @@ test('wall face colors layer and lock are editable without leaving 2D 3D workspa
  await page.locator('[data-wall-id]').first().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:270});
  await expect(page.locator('#wall-layer')).toBeVisible();
  await page.locator('#wall-layer').selectOption('decor');
- await page.locator('[data-wall-color="faceAColor"]').fill('#bbaacc');
- await page.locator('[data-wall-color="faceAColor"]').dispatchEvent('change');
+ await page.locator('[data-wall-color="faceAColor"]').evaluate(input=>{input.value='#bbaacc';input.dispatchEvent(new Event('change',{bubbles:true}));});
  await page.locator('#wall-locked').check();
  await expect(page.locator('#wall-locked')).toBeChecked();
  await page.locator('[data-wall-layer-visible="decor"]').uncheck();
