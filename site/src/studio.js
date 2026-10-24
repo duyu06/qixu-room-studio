@@ -4,6 +4,7 @@ import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
 import {snapFurniture,snapFurnitureToWalls,alignFurniture,distributeFurniture} from './studio-alignment.js';
 import {rotateFurnitureGroup,duplicateFurnitureSelection} from './studio-groups.js';
+import {moveWallJoint,translateWallWithJoints} from './studio-wall-joints.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -269,14 +270,14 @@ function inspect(){
     const w=doc.walls.find(x=>x.id===selection.id),L=length(w);
     if(key==='wallThickness')w.thickness=val;
     if(key==='wallHeightSingle')w.height=val;
-    if(key==='wallAngle'){const theta=val*Math.PI/180;w.b=[w.a[0]+Math.cos(theta)*L,w.a[1]+Math.sin(theta)*L];}
-    if(key==='wallAX'){const delta=val-w.a[0];w.a[0]=val;w.b[0]+=delta;}
-    if(key==='wallAZ'){const delta=val-w.a[1];w.a[1]=val;w.b[1]+=delta;}
+    if(key==='wallAngle'){const theta=val*Math.PI/180;moveWallJoint(doc,w.id,'b',[w.a[0]+Math.cos(theta)*L,w.a[1]+Math.sin(theta)*L]);}
+    if(key==='wallAX')translateWallWithJoints(doc,w.id,val-w.a[0],0);
+    if(key==='wallAZ')translateWallWithJoints(doc,w.id,0,val-w.a[1]);
     return;
    }
    if(selection.kind==='wall'&&key==='wallLength'){
     const w=doc.walls.find(x=>x.id===selection.id),old=length(w);
-    w.b=[w.a[0]+(w.b[0]-w.a[0])*val/old,w.a[1]+(w.b[1]-w.a[1])*val/old];
+    moveWallJoint(doc,w.id,'b',[w.a[0]+(w.b[0]-w.a[0])*val/old,w.a[1]+(w.b[1]-w.a[1])*val/old]);
     for(const o of doc.openings.filter(x=>x.wallId===w.id))
      if(o.t*val-o.width/2<.12||o.t*val+o.width/2>val-.12)throw Error('门窗超出缩短后的墙段');
    }
