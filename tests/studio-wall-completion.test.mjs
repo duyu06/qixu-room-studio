@@ -30,6 +30,7 @@ const joint={thickness:.14,wallHeight:2.8,walls:[{id:'a',a:[0,0],b:[2,0]},{id:'b
 const corners=wallJunctions(joint);
 assert.ok(corners.some(p=>p.x===2&&p.z===0&&p.count===2));
 assert.ok(corners.some(p=>p.x===2&&p.z===1&&p.count===2));
+assert.equal(corners.find(p=>p.x===2&&p.z===0).primaryWallId,'a');
 joint.walls[1].locked=true;
 assert.throws(()=>moveWallJoint(joint,'a','b',[3,0]),/锁定/);
 assert.deepEqual(joint.walls[0].b,[2,0]);
