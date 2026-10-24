@@ -3,6 +3,7 @@ import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
 import {snapFurniture,snapFurnitureToWalls,alignFurniture,distributeFurniture} from './studio-alignment.js';
+import {rotateFurnitureGroup,duplicateFurnitureSelection} from './studio-groups.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -761,6 +762,27 @@ document.querySelectorAll('[data-batch]').forEach(button=>button.addEventListene
  const ok=change(()=>{if(mode.startsWith('align'))alignFurniture(doc,ids,mode.endsWith('x')?'x':'z');else distributeFurniture(doc,ids,mode.endsWith('x')?'x':'z');});
  if(ok){updateBatchSelection();notify('已完成批量调整，可撤销');}
 }));
+function selectedFurniture(){
+ return [...selectedFurnitureIds].filter(id=>doc.furniture.some(item=>item.id===id));
+}
+function rotateSelectedGroup(delta){
+ const ids=selectedFurniture();
+ if(ids.length<2){notify('先用 Shift 选择至少两件家具');return;}
+ const success=change(()=>rotateFurnitureGroup(doc,ids,delta));
+ if(success)notify('已旋转所选家具，可撤销');
+}
+$('rotate-group-left').addEventListener('click',()=>rotateSelectedGroup(-Math.PI/2));
+$('rotate-group-right').addEventListener('click',()=>rotateSelectedGroup(Math.PI/2));
+$('duplicate-furniture-selection').addEventListener('click',()=>{
+ const ids=selectedFurniture();
+ if(!ids.length){notify('请先选择要复制的家具');return;}
+ const ok=change(()=>{
+  const created=duplicateFurnitureSelection(doc,ids,()=>'q'+Math.random().toString(36).slice(2,10));
+  selectedFurnitureIds.clear();for(const item of created)selectedFurnitureIds.add(item.id);
+  selection={kind:'furniture',id:created[0].id};
+ });
+ if(ok){updateBatchSelection();notify('已复制 '+ids.length+' 件家具，原组合关系保留');}
+});
 $('group-furniture').addEventListener('click',()=>{
  const ids=[...selectedFurnitureIds].filter(id=>doc.furniture.some(f=>f.id===id));
  if(ids.length<2){notify('组合至少需要两件家具');return;}
@@ -789,7 +811,8 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();change(()=>deleteObject(doc,selection.id));selection=null;refresh();return;
  }
  if(cmd&&e.key.toLowerCase()==='d'&&selection?.kind==='furniture'){
-   e.preventDefault();const source=doc.furniture.find(f=>f.id===selection.id);
+   e.preventDefault();
+   if(selectedFurnitureIds.size>1){$('duplicate-furniture-selection').click();return;}const source=doc.furniture.find(f=>f.id===selection.id);
    if(source)change(()=>{const created=addFurniture(doc,source.type);
     Object.assign(created,{...structuredClone(source),id:created.id,x:source.x+.3,z:source.z+.3});selection={kind:'furniture',id:created.id};});
    return;
