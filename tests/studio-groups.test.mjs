@@ -9,7 +9,7 @@ assert.equal(copies.length,2);
 assert.equal(copies[0].groupId,copies[1].groupId);
 assert.notEqual(copies[0].groupId,'g1');
 assert.equal(d.furniture.length,4);
-const bounded={width:3,depth:3,furniture:[{id:'a',x:-1,z:0,width:1,depth:1,rotation:0},{id:'b',x:1,z:0,width:1,depth:1,rotation:0}]};
+const bounded={width:2.6,depth:2.6,furniture:[{id:'a',x:-1,z:0,width:1,depth:1,rotation:0},{id:'b',x:1,z:0,width:1,depth:1,rotation:0}]};
 assert.throws(()=>rotateFurnitureGroup(bounded,['a','b'],Math.PI/4),/边界/);
 assert.equal(bounded.furniture[0].x,-1);
 console.log('Group rotation and duplicate validation passed');
