@@ -42,4 +42,5 @@ jobs:
           node tests/studio-wall-parameters.test.mjs
           node tests/studio-wall-joints.test.mjs
           node tests/studio-wall-types.test.mjs
+          node tests/studio-wall-completion.test.mjs
           node tests/studio-inference.test.mjs
