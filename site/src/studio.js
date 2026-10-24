@@ -1,4 +1,5 @@
 import {wallJunctions} from './studio-wall-junctions.js';
+import {captureFacePreset,applyFacePreset} from './studio-material-library.js';
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
@@ -225,6 +226,37 @@ function draw(){
 const field=(title,key,value,min,max,step=.1)=>
  '<label class="field">'+title+'<input type="number" data-prop="'+key+'" value="'+value+
  '" min="'+min+'" max="'+max+'" step="'+step+'"></label>';
+const MATERIAL_PRESETS_KEY='qixu-wall-material-presets-v1';
+function readWallPresets(){try{const found=JSON.parse(localStorage.getItem(MATERIAL_PRESETS_KEY)||'[]');return Array.isArray(found)?found.slice(0,40):[];}catch{return [];}}
+function displayWallPresets(){
+ const select=$('saved-wall-materials');const value=select.value;select.replaceChildren(new Option('选择材质预设',''));
+ for(const item of readWallPresets())select.add(new Option(item.name,item.id));
+ if([...select.options].some(o=>o.value===value))select.value=value;
+}
+function chosenWall(){return selection?.kind==='wall'?doc.walls.find(w=>w.id===selection.id):null;}
+for(const [button,side] of [['save-face-a-preset','faceA'],['save-face-b-preset','faceB']]){
+ $(button).addEventListener('click',()=>{
+  const wall=chosenWall();if(!wall){notify('请先选中一段墙体');return;}
+  const name=prompt('请输入材质预设名称');if(!name?.trim())return;
+  const presets=readWallPresets();if(presets.length>=40){notify('最多保存 40 个材质预设');return;}
+  presets.push({id:'mat-'+Date.now().toString(36),name:name.trim().slice(0,40),values:captureFacePreset(wall,side)});
+  try{localStorage.setItem(MATERIAL_PRESETS_KEY,JSON.stringify(presets));displayWallPresets();$('saved-wall-materials').value=presets.at(-1).id;notify('材质预设已保存');}
+  catch{notify('存储空间不足，请减少贴图或删除旧预设');}
+ });
+}
+for(const [button,side] of [['apply-preset-face-a','faceA'],['apply-preset-face-b','faceB']]){
+ $(button).addEventListener('click',()=>{
+  const wall=chosenWall(),item=readWallPresets().find(x=>x.id===$('saved-wall-materials').value);
+  if(!wall||!item){notify('请先选中墙体及材质预设');return;}
+  if(change(()=>applyFacePreset(wall,side,item.values)))notify('材质已应用到墙体'+(side==='faceA'?'正面':'背面'));
+ });
+}
+$('delete-wall-preset').addEventListener('click',()=>{
+ const id=$('saved-wall-materials').value;if(!id)return;
+ try{localStorage.setItem(MATERIAL_PRESETS_KEY,JSON.stringify(readWallPresets().filter(p=>p.id!==id)));displayWallPresets();notify('预设已删除');}
+ catch{notify('删除预设失败');}
+});
+displayWallPresets();
 function inspect(){
  const panel=$('property-body');let html='';
  if(!selection){
