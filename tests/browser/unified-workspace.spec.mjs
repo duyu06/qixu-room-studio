@@ -541,4 +541,14 @@ test('saved wall material gallery shows searchable draggable categorized thumbna
  await expect(gallery.locator('.material-preset-card')).toHaveCount(1);
  await gallery.locator('.material-preset-card').click();
  await expect(page.locator('#saved-wall-materials')).toHaveValue('mat-gallery-test');
+ await page.evaluate(()=>{
+  const wall=document.querySelector('#plan-svg [data-wall-id]');
+  const svg=document.querySelector('#plan-svg');
+  const x=(Number(wall.getAttribute('x1'))+Number(wall.getAttribute('x2')))/2;
+  const y=(Number(wall.getAttribute('y1'))+Number(wall.getAttribute('y2')))/2;
+  const screen=new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());
+  const data=new DataTransfer();data.setData('application/x-qixu-material','mat-gallery-test');
+  svg.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data,clientX:screen.x,clientY:screen.y}));
+ });
+ await expect(page.locator('#property-body [data-wall-face-pattern="faceAPattern"]')).toHaveValue('plaster');
 });
