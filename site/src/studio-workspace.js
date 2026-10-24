@@ -1,5 +1,6 @@
 import {demoId,projectStorageKey,renderLink} from './qixu-routes.js';
 import {validateProject,length} from './studio-model.js';
+import {inferModel} from './studio-inference.js';
 
 const $=id=>document.getElementById(id);
 const demo=demoId(new URLSearchParams(location.search).get('template'));
@@ -42,7 +43,11 @@ function showAnalysis(){
  '当前项目缺少门洞或窗洞信息。先在户型模块补全开口，才能开展通风条件分析。';
  const label=document.createElement('p');label.className='insight-note';
  label.textContent='实际可使用面积需确认墙体是否形成封闭房间；画布包络面积不可用作房地产测绘面积。';
- dest.append(dl,msg,label);
+ const inspection=inferModel(doc);
+ const geometry=document.createElement('p');geometry.className='insight-note';
+ geometry.textContent='三维几何检查：'+(inspection.issues.length?inspection.issues.join('；'):'当前墙体与门窗尺寸未发现明显异常')+
+  '。现有 3D 模型随 2D 编辑自动更新；未知梁柱、楼板和施工构造不自动推断。';
+ dest.append(dl,msg,label,geometry);
 
 }
 function showRender(force=false){
