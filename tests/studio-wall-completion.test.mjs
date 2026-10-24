@@ -8,6 +8,7 @@ w.layer='decor';w.faceAColor='#abcdef';w.faceBColor='#123456';w.locked=true;
 assert.equal(validateProject(d),null);
 w.faceAColor='red';assert.match(validateProject(d),/墙面颜色/);
 w.faceAColor='#abcdef';w.layer='wrong';assert.match(validateProject(d),/墙体图层/);
+w.layer='IFC_WALL';assert.equal(validateProject(d),null);
 w.layer='decor';w.locked='yes';assert.match(validateProject(d),/锁定/);
 const joint={thickness:.14,wallHeight:2.8,walls:[{id:'a',a:[0,0],b:[2,0]},{id:'b',a:[2,0],b:[2,2]},{id:'c',a:[2,1],b:[4,1]}]};
 const corners=wallJunctions(joint);
