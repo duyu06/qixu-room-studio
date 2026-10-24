@@ -492,3 +492,18 @@ test('wall face colors layer and lock are editable without leaving 2D 3D workspa
  await page.locator('[data-view="split"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('wall face patterns and repeats independently persist in property inspector',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-wall-id]').first().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:270});
+ await expect(page.locator('[data-wall-face-pattern="faceAPattern"]')).toBeVisible();
+ await page.locator('[data-wall-face-pattern="faceAPattern"]').selectOption('plaster');
+ await page.locator('[data-wall-face-pattern="faceBPattern"]').selectOption('wallpaper');
+ await page.locator('[data-prop="faceARepeat"]').fill('4');
+ await page.locator('[data-prop="faceARepeat"]').dispatchEvent('change');
+ await expect(page.locator('[data-wall-face-pattern="faceAPattern"]')).toHaveValue('plaster');
+ await expect(page.locator('[data-wall-face-pattern="faceBPattern"]')).toHaveValue('wallpaper');
+ await expect(page.locator('[data-prop="faceARepeat"]')).toHaveValue('4');
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
