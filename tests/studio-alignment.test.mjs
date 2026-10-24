@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {snapFurniture,alignFurniture} from '../site/src/studio-alignment.js';
+import {snapFurniture,alignFurniture,snapFurnitureToWalls} from '../site/src/studio-alignment.js';
 const project={furniture:[
  {id:'a',x:1,z:1,width:1,depth:.6},
  {id:'b',x:3,z:3,width:1.5,depth:1},
@@ -16,3 +16,12 @@ assert.equal(project.furniture[0].x,project.furniture[1].x);
 assert.notEqual(project.furniture[0].x,before);
 assert.throws(()=>alignFurniture(project,['a'],'x','center'),/两件/);
 console.log('Furniture alignment and edge snap tests passed');
+
+const wallDoc={thickness:.12,walls:[{id:'w1',a:[-3,-2],b:[-3,2]},{id:'w2',a:[-3,-2],b:[3,-2]}],furniture:[{id:'sofa',x:-2,z:0,width:1,depth:.8,rotation:0}]};
+const horizontal=snapFurnitureToWalls(wallDoc,'sofa',-2.42,0);
+assert.ok(Math.abs(horizontal.x-(-2.41))<.00001);
+assert.equal(horizontal.guides[0].wallId,'w1');
+const vertical=snapFurnitureToWalls(wallDoc,'sofa',0,-1.5);
+assert.ok(Math.abs(vertical.z-(-1.51))<.00001);
+assert.equal(vertical.guides[0].wallId,'w2');
+assert.equal(snapFurnitureToWalls(wallDoc,'sofa',0,0).guides.length,0);
