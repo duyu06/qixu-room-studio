@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {createProject} from '../site/src/studio-model.js';
+import {inferModel} from '../site/src/studio-inference.js';
+const p=createProject(),r=inferModel(p);
+assert.equal(r.walls,p.walls.length);
+assert.equal(r.openings,p.openings.length);
+assert.equal(r.source,'editable-plan');assert.equal(r.engineeringValidated,false);
+assert.ok(r.approximateVolume>0);
+assert.equal(r.complete,true);
+p.openings[0].sill=3;
+const warning=inferModel(p);
+assert.equal(warning.complete,false);
+assert.match(warning.issues.join(' '),/高于墙顶/);
+assert.throws(()=>inferModel(null),/无效/);
+console.log('3D plan inference geometry checks passed');
