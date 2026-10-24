@@ -109,7 +109,7 @@ export function setOpeningDimension(doc,o,values){
   try{
     if(o.width<.45||o.width>length(wall)-.24||o.t*length(wall)-o.width/2<.12||
        o.t*length(wall)+o.width/2>length(wall)-.12||o.sill<0||o.height<.3||
-       o.sill+o.height>doc.wallHeight-.08)throw Error('开口超出墙体边界');
+       o.sill+o.height>(wall.height??doc.wallHeight)-.08)throw Error('开口超出墙体边界');
     if(doc.openings.some(a=>a.id!==o.id&&a.wallId===o.wallId&&
       Math.abs(a.t*length(wall)-o.t*length(wall))<(a.width+o.width)/2+.1))
       throw Error('与其他门窗重叠');
@@ -118,7 +118,7 @@ export function setOpeningDimension(doc,o,values){
   }catch(e){Object.assign(o,old);throw e;}
 }
 export function wallPieces(doc,wall){
-  const L=length(wall),H=doc.wallHeight,holes=doc.openings.filter(o=>o.wallId===wall.id)
+  const L=length(wall),H=wall.height??doc.wallHeight,holes=doc.openings.filter(o=>o.wallId===wall.id)
     .sort((a,b)=>a.t-b.t);
   const solids=[];let cursor=0;
   const push=(start,end,bottom,top)=>{if(end-start>.0001&&top-bottom>.0001)
@@ -176,6 +176,12 @@ export function validateProject(doc){
     !doc.openings.every(o=>typeof o.id==='string'&&['door','window'].includes(o.kind)&&
       doc.walls.some(w=>w.id===o.wallId)&&Number.isFinite(o.t)&&Number.isFinite(o.width)&&
       Number.isFinite(o.height)&&Number.isFinite(o.sill)))return '门窗数据错误';
+  if(doc.walls.some(w=>(w.thickness!==undefined&&(!Number.isFinite(w.thickness)||w.thickness<.06||w.thickness>.6))||
+    (w.height!==undefined&&(!Number.isFinite(w.height)||w.height<2||w.height>6))))return '独立墙体厚度或高度无效';
+  if(doc.openings.some(o=>{
+    const w=doc.walls.find(w=>w.id===o.wallId);
+    return o.sill+o.height>(w?.height??doc.wallHeight)-.08;
+  }))return '门窗高于所在墙体';
   try {for(const w of doc.walls)wallPieces(doc,w);}catch{return '墙体开口互相重叠';}
   if(!Array.isArray(doc.furniture)||doc.furniture.length>500||
      !doc.furniture.every(f=>FURNITURE[f.type]&&[f.x,f.z,f.width,f.depth,f.height,f.rotation].every(Number.isFinite)&&
