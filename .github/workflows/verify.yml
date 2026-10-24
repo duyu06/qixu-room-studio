@@ -40,4 +40,5 @@ jobs:
           node tests/studio-alignment.test.mjs
           node tests/studio-groups.test.mjs
           node tests/studio-wall-parameters.test.mjs
+          node tests/studio-wall-joints.test.mjs
           node tests/studio-inference.test.mjs
