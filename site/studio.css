@@ -90,3 +90,7 @@ svg .wall-click{stroke:transparent;stroke-width:.44;cursor:pointer}.wall-base{st
 }
 
 .alignment-guide{stroke:#159c88;stroke-width:.025;stroke-dasharray:.11 .07;opacity:.9;vector-effect:non-scaling-stroke}
+
+.furniture-drop-preview{fill:#36a99144;stroke:#15927f;stroke-width:.04;stroke-dasharray:.1 .07;vector-effect:non-scaling-stroke}
+.furniture-drop-preview.invalid{fill:#de554444;stroke:#c53e3e}
+#plan-svg.furniture-drop-active{cursor:copy}
