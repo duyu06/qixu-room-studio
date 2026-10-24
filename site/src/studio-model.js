@@ -176,6 +176,7 @@ export function validateProject(doc){
     !doc.openings.every(o=>typeof o.id==='string'&&['door','window'].includes(o.kind)&&
       doc.walls.some(w=>w.id===o.wallId)&&Number.isFinite(o.t)&&Number.isFinite(o.width)&&
       Number.isFinite(o.height)&&Number.isFinite(o.sill)))return '门窗数据错误';
+  if(doc.walls.some(w=>w.wallType!==undefined&&!['exterior','interior','partition'].includes(w.wallType)))return '墙体类型无效';
   if(doc.walls.some(w=>(w.thickness!==undefined&&(!Number.isFinite(w.thickness)||w.thickness<.06||w.thickness>.6))||
     (w.height!==undefined&&(!Number.isFinite(w.height)||w.height<2||w.height>6))))return '独立墙体厚度或高度无效';
   if(doc.openings.some(o=>{
