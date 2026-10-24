@@ -466,3 +466,14 @@ test('group rotation and batch duplicate actions preserve original furniture IDs
  await page.locator('#duplicate-furniture-selection').click();
  await expect(page.locator('[data-furniture-id]')).toHaveCount(prior+2);
 });
+
+test('per-wall thickness and height edit through property inspector and sync to 3D',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-wall-id]').first().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:270});
+ await expect(page.locator('[data-prop="wallThickness"]')).toBeVisible();
+ await page.locator('[data-prop="wallThickness"]').fill('0.22');
+ await page.locator('[data-prop="wallThickness"]').dispatchEvent('change');
+ await expect(page.locator('[data-prop="wallThickness"]')).toHaveValue('0.22');
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
