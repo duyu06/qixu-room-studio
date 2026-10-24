@@ -237,7 +237,11 @@ function inspect(){
    field('厚度（米）','wallThickness',w.thickness??doc.thickness,.06,.6,.01)+
    field('高度（米）','wallHeightSingle',w.height??doc.wallHeight,2,6,.1)+'</div>'+
    '<div class="props-grid">'+field('起点 X','wallAX',w.a[0].toFixed(2),-100,100)+field('起点 Z','wallAZ',w.a[1].toFixed(2),-100,100)+'</div>'+
-   '<p class="muted">独立高度与厚度覆盖全屋默认值；长度、角度及起点变化会同步更新 2D/3D。门窗边界自动校验。</p><div class="props-actions"><button data-delete class="danger">删除墙体</button></div>';
+   '<div class="props-grid"><label>墙体正面色<input type="color" data-wall-color="faceAColor" value="'+(w.faceAColor||'#e8ddd1')+'"></label><label>墙体背面色<input type="color" data-wall-color="faceBColor" value="'+(w.faceBColor||'#f8f4eb')+'"></label></div>'+
+   '<label>墙体图层<select id="wall-layer"><option value="structure">主体结构</option><option value="partition">隔断</option><option value="decor">装饰墙</option></select></label>'+
+   '<label class="check-row"><input type="checkbox" id="wall-locked" '+(w.locked?'checked':'')+'> 锁定墙体，阻止编辑</label>'+
+   '<p class="muted">墙面颜色和图层独立保存；锁定后不能修改墙体几何。'+
+   '内外面颜色根据墙线方向区分。</p><div class="props-actions"><button data-delete class="danger">删除墙体</button></div>';
  }else if(selection.kind==='opening'){
   const o=doc.openings.find(x=>x.id===selection.id);if(!o){selection=null;return inspect();}
   html='<div class="label">'+(o.kind==='door'?'门洞':'窗户')+'</div><div class="props-grid">'+
@@ -253,6 +257,17 @@ function inspect(){
   '</div><div class="props-actions"><button data-duplicate>复制</button><button data-delete class="danger">删除</button></div>';
  }
  panel.innerHTML=html;
+ if(selection?.kind==='wall'){
+  const id=selection.id,wall=doc.walls.find(w=>w.id===id);
+  const layer=panel.querySelector('#wall-layer');if(layer){
+   layer.value=wall.layer||'structure';
+   layer.addEventListener('change',()=>change(()=>{doc.walls.find(w=>w.id===id).layer=layer.value;}));
+  }
+  panel.querySelector('#wall-locked')?.addEventListener('change',e=>change(()=>{doc.walls.find(w=>w.id===id).locked=e.target.checked;}));
+  panel.querySelectorAll('[data-wall-color]').forEach(input=>input.addEventListener('change',()=>change(()=>{
+   doc.walls.find(w=>w.id===id)[input.dataset.wallColor]=input.value;
+  })));
+ }
  const typeSelect=panel.querySelector('#wall-type-select');
  if(typeSelect&&selection?.kind==='wall'){
   const wall=doc.walls.find(w=>w.id===selection.id);
@@ -260,7 +275,7 @@ function inspect(){
   typeSelect.addEventListener('change',()=>{
    const presets={exterior:.24,interior:.14,partition:.10};
    const value=typeSelect.value;
-   change(()=>{const w=doc.walls.find(w=>w.id===selection.id);w.wallType=value;w.thickness=presets[value];});
+   change(()=>{const w=doc.walls.find(w=>w.id===selection.id);if(w.locked)throw Error('墙体已锁定');w.wallType=value;w.thickness=presets[value];});
   });
  }
  for(const input of panel.querySelectorAll('[data-prop]'))input.addEventListener('change',()=>{
@@ -276,6 +291,7 @@ function inspect(){
     const o=doc.openings.find(x=>x.id===selection.id),map={openWidth:'width',openHeight:'height',openSill:'sill'};
     setOpeningDimension(doc,o,{[map[key]]:val});return;
    }
+   if(selection.kind==='wall'&&doc.walls.find(w=>w.id===selection.id)?.locked)throw Error('墙体已锁定，请先解锁');
    if(selection.kind==='wall'&&['wallThickness','wallHeightSingle','wallAngle','wallAX','wallAZ'].includes(key)){
     const w=doc.walls.find(x=>x.id===selection.id),L=length(w);
     if(key==='wallThickness')w.thickness=val;
@@ -404,7 +420,7 @@ svg.addEventListener('pointermove',e=>{
  }
  const next=[drag.from[0]+current[0]-drag.p[0],drag.from[1]+current[1]-drag.p[1]];
  if(drag.type==='endpoint'){
-   const w=doc.walls.find(x=>x.id===drag.id);if(!w)return;
+   const w=doc.walls.find(x=>x.id===drag.id);if(!w||w.locked)return;
    const previous=[...w[drag.side]];
    const snapped=snapPosition(next,doc,.1,{excludePoint:drag.from,excludeWallId:drag.id,disable:e.altKey});
    for(const segment of doc.walls){
