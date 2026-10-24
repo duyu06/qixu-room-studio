@@ -1,3 +1,4 @@
+import {wallJunctions} from './studio-wall-junctions.js';
 import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
@@ -28,6 +29,7 @@ const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null,alignmentGuides=[];
 const selectedFurnitureIds=new Set();
+const visibleWallLayers=new Set(['structure','partition','decor']);
 function updateBatchSelection(){const indicator=$('batch-selection-count');if(indicator)indicator.textContent=selectedFurnitureIds.size+' 件家具已选中 · Shift+点击添加或取消';}
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
@@ -165,6 +167,7 @@ function draw(){
  });
  const collisionIds=new Set(furnitureDiagnostics(doc).map(x=>x.id));
  for(const wall of doc.walls){
+   if(!visibleWallLayers.has(wall.layer||'structure'))continue;
    const picked=selection?.id===wall.id;
    world.append(line(...wall.a,...wall.b,{class:'wall-base'+(picked?' selected':''),'stroke-width':wall.thickness??doc.thickness}));
    world.append(line(...wall.a,...wall.b,{class:'wall-click','data-wall-id':wall.id}));
@@ -374,6 +377,7 @@ svg.addEventListener('pointerdown',e=>{
  const endpoint=e.target.closest('[data-endpoint-wall]');
  if(endpoint && tool==='select'){
    const w=doc.walls.find(w=>w.id===endpoint.dataset.endpointWall);
+   if(w?.locked){notify('墙体已锁定');return;}
    if(w){picked('wall',w.id);drag={type:'endpoint',id:w.id,side:endpoint.dataset.endpointSide,
      p,from:[...w[endpoint.dataset.endpointSide]],before:copy(),moved:false};
      try{svg.setPointerCapture(e.pointerId);}catch{}}
@@ -386,7 +390,7 @@ svg.addEventListener('pointerdown',e=>{
   const wallId=wall?.dataset.wallId||doc.openings.find(x=>x.id===opening?.dataset.openingId)?.wallId;
   const near=nearestWall(doc,p);
   if(!near||near.distance>.48||near.wall.id!==wallId){notify('请点击墙体中心线');return;}
-  if(change(()=>{const o=addOpening(doc,tool,wallId,near.t,tool==='door'?.9:1.25);
+  if(change(()=>{if(doc.walls.find(w=>w.id===wallId)?.locked)throw Error('墙体已锁定');const o=addOpening(doc,tool,wallId,near.t,tool==='door'?.9:1.25);
    selection={kind:'opening',id:o.id};}))notify('真实墙洞已创建，可在右侧编辑尺寸');
   e.preventDefault();return;
  }
@@ -473,6 +477,11 @@ document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',()=>sidebar(b.dataset.panel)));
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 for(const name of ['show-grid','show-measures'])$(name).addEventListener('change',draw);
+document.querySelectorAll('[data-wall-layer-visible]').forEach(input=>input.addEventListener('change',()=>{
+ const layer=input.dataset.wallLayerVisible;
+ if(input.checked)visibleWallLayers.add(layer);else visibleWallLayers.delete(layer);
+ lastStructureKey=null;lastSceneKey=null;draw();if(ready)renderThree();
+}));
 $('fit-view').addEventListener('click',fit);$('reset-camera').addEventListener('click',fit);
 let panTool=false;
 function updateCameraTool(){
@@ -943,6 +952,11 @@ function renderThree(){
     new THREE.MeshBasicMaterial({map:texture,transparent:true,opacity:.58,depthWrite:false}));
   ref.rotation.x=-Math.PI/2;ref.position.y=.026;content.add(ref);
  }
+ for(const junction of wallJunctions({...doc,walls:doc.walls.filter(w=>visibleWallLayers.has(w.layer||'structure'))})){
+  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(junction.thickness,junction.height,junction.thickness),material);
+  mesh.position.set(junction.x,junction.height/2,junction.z);mesh.castShadow=true;mesh.receiveShadow=true;content.add(mesh);
+ }
  for(const wall of doc.walls){
   const dx=wall.b[0]-wall.a[0],dz=wall.b[1]-wall.a[1],wallLength=length(wall);
   const group=new THREE.Group();group.position.set(wall.a[0],0,wall.a[1]);
@@ -950,6 +964,7 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
+  if(!visibleWallLayers.has(wall.layer||'structure'))continue;
   const wallTone={exterior:'#e7ded2',interior:doc.wallColor,partition:'#dceae8'}[wall.wallType]||doc.wallColor;
   const material=wallMaterial(wallTone,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
