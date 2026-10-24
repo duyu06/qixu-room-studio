@@ -231,7 +231,7 @@ function inspect(){
   '<p class="muted">当前户型为室内规划示意，不自动判定承重墙或建筑安全。</p>';
  }else if(selection.kind==='wall'){
   const w=doc.walls.find(x=>x.id===selection.id);if(!w){selection=null;return inspect();}
-  html='<div class="label">实体墙 · 独立参数</div><div class="props-grid">'+
+  html='<div class="label">实体墙 · 独立参数</div><label class="label" for="wall-type-select">墙体类型</label><select id="wall-type-select"><option value="interior">内墙</option><option value="exterior">外墙</option><option value="partition">轻质隔断</option></select><div class="props-grid">'+
    field('墙长（米）','wallLength',length(w).toFixed(2),.3,60)+
    field('角度（°）','wallAngle',(Math.atan2(w.b[1]-w.a[1],w.b[0]-w.a[0])*180/Math.PI).toFixed(1),-360,360,1)+
    field('厚度（米）','wallThickness',w.thickness??doc.thickness,.06,.6,.01)+
@@ -253,6 +253,16 @@ function inspect(){
   '</div><div class="props-actions"><button data-duplicate>复制</button><button data-delete class="danger">删除</button></div>';
  }
  panel.innerHTML=html;
+ const typeSelect=panel.querySelector('#wall-type-select');
+ if(typeSelect&&selection?.kind==='wall'){
+  const wall=doc.walls.find(w=>w.id===selection.id);
+  typeSelect.value=wall?.wallType||'interior';
+  typeSelect.addEventListener('change',()=>{
+   const presets={exterior:.24,interior:.14,partition:.10};
+   const value=typeSelect.value;
+   change(()=>{const w=doc.walls.find(w=>w.id===selection.id);w.wallType=value;w.thickness=presets[value];});
+  });
+ }
  for(const input of panel.querySelectorAll('[data-prop]'))input.addEventListener('change',()=>{
   const key=input.dataset.prop,val=Number(input.value);
   if(!Number.isFinite(val))return notify('请输入正确数字');
@@ -924,7 +934,8 @@ function renderThree(){
   group.userData.selection={kind:'wall',id:wall.id};
   const cx=(wall.a[0]+wall.b[0])/2,cz=(wall.a[1]+wall.b[1])/2;
   const fadeWall=demoXray&&(cx>doc.width*.27||cz>doc.depth*.27);
-  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
+  const wallTone={exterior:'#e7ded2',interior:doc.wallColor,partition:'#dceae8'}[wall.wallType]||doc.wallColor;
+  const material=wallMaterial(wallTone,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   for(const piece of wallPieces(doc,wall)){
