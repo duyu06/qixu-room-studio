@@ -408,12 +408,12 @@ test('editor exposes alignment snapping and keyboard nudge in shared 2D/3D mode'
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
 
-test('one-click inferred modeling reports assumptions and opens live dual view',async({page})=>{
+test('existing 3D auto-sync needs no generation button and geometry checks live in analysis',async({page})=>{
  await page.goto('/studio.html?template=sunlit&view=2d');
- await page.locator('[data-panel="structure"]').click();
- await page.locator('#infer-3d-model').click();
- await expect(page.locator('#inferred-model-report')).toContainText('推算');
- await expect(page.locator('#canvas-wrap')).toHaveClass(/dual-view/);
+ await expect(page.locator('#infer-3d-model')).toHaveCount(0);
+ await page.locator('[data-view="split"]').click();
  await expect(page.locator('#plan-svg')).toBeVisible();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
+ await page.locator('[data-panel="analysis"]').click();
+ await expect(page.locator('#studio-analysis-result')).toContainText('三维几何检查');
 });
