@@ -5,6 +5,11 @@ import {moveWallJoint,translateWallWithJoints} from '../site/src/studio-wall-joi
 const d=createProject();
 const w=d.walls[0];
 w.layer='decor';w.faceAColor='#abcdef';w.faceBColor='#123456';w.locked=true;
+w.faceAPattern='plaster';w.faceBPattern='wallpaper';w.faceARepeat=4;w.faceBRepeat=8;
+assert.equal(validateProject(d),null);
+w.faceAPattern='invalid';assert.match(validateProject(d),/纹理类型/);
+w.faceAPattern='plaster';w.faceBRepeat=13;assert.match(validateProject(d),/重复次数/);
+w.faceBRepeat=8;
 assert.equal(validateProject(d),null);
 w.faceAColor='red';assert.match(validateProject(d),/墙面颜色/);
 w.faceAColor='#abcdef';w.layer='wrong';assert.match(validateProject(d),/墙体图层/);
