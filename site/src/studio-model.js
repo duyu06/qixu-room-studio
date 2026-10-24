@@ -181,6 +181,7 @@ export function validateProject(doc){
   if(doc.walls.some(w=>['faceAColor','faceBColor'].some(key=>w[key]!==undefined&&!/^#[0-9a-fA-F]{6}$/.test(w[key]))))return '墙面颜色无效';
   if(doc.walls.some(w=>['faceAPattern','faceBPattern'].some(key=>w[key]!==undefined&&!['paint','plaster','wallpaper'].includes(w[key]))))return '墙面纹理类型无效';
   if(doc.walls.some(w=>['faceARepeat','faceBRepeat'].some(key=>w[key]!==undefined&&(!Number.isInteger(w[key])||w[key]<1||w[key]>12))))return '墙面纹理重复次数无效';
+  if(doc.walls.some(w=>['faceARoughness','faceBRoughness','faceAMetalness','faceBMetalness'].some(key=>w[key]!==undefined&&(!Number.isFinite(w[key])||w[key]<0||w[key]>1))))return '墙面物理材质参数无效';
   if(doc.walls.some(w=>w.wallType!==undefined&&!['exterior','interior','partition'].includes(w.wallType)))return '墙体类型无效';
   if(doc.walls.some(w=>(w.thickness!==undefined&&(!Number.isFinite(w.thickness)||w.thickness<.06||w.thickness>.6))||
     (w.height!==undefined&&(!Number.isFinite(w.height)||w.height<2||w.height>6))))return '独立墙体厚度或高度无效';
