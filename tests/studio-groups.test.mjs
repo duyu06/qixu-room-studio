@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {rotateFurnitureGroup,duplicateFurnitureSelection} from '../site/src/studio-groups.js';
+const d={width:12,depth:10,furniture:[{id:'a',groupId:'g1',x:-1,z:0,width:1,depth:1,rotation:0},{id:'b',groupId:'g1',x:1,z:0,width:1,depth:1,rotation:0}]};
+rotateFurnitureGroup(d,['a','b'],Math.PI/2);
+assert.ok(Math.abs(d.furniture[0].x)<1e-8);
+assert.ok(Math.abs(d.furniture[0].z+1)<1e-8);
+let i=0;const copies=duplicateFurnitureSelection(d,['a','b'],()=> 'new'+ ++i);
+assert.equal(copies.length,2);
+assert.equal(copies[0].groupId,copies[1].groupId);
+assert.notEqual(copies[0].groupId,'g1');
+assert.equal(d.furniture.length,4);
+const bounded={width:3,depth:3,furniture:[{id:'a',x:-1,z:0,width:1,depth:1,rotation:0},{id:'b',x:1,z:0,width:1,depth:1,rotation:0}]};
+assert.throws(()=>rotateFurnitureGroup(bounded,['a','b'],Math.PI/4),/边界/);
+assert.equal(bounded.furniture[0].x,-1);
+console.log('Group rotation and duplicate validation passed');
