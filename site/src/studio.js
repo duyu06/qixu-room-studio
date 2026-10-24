@@ -245,6 +245,10 @@ function inspect(){
    '<div class="props-grid">'+field('正面纹理密度','faceARepeat',w.faceARepeat??doc.textureRepeat??3,1,12,1)+field('背面纹理密度','faceBRepeat',w.faceBRepeat??doc.textureRepeat??3,1,12,1)+'</div>'+
    '<div class="props-grid">'+field('正面粗糙度','faceARoughness',w.faceARoughness??.94,0,1,.05)+field('背面粗糙度','faceBRoughness',w.faceBRoughness??.94,0,1,.05)+'</div>'+
    '<div class="props-grid">'+field('正面金属度','faceAMetalness',w.faceAMetalness??0,0,1,.05)+field('背面金属度','faceBMetalness',w.faceBMetalness??0,0,1,.05)+'</div>'+
+   '<div class="label">双面 PBR 贴图（PNG/JPEG/WebP，每张不超过 600KB）</div>'+
+   '<div class="props-grid"><label>正面法线<input type="file" data-wall-map="faceANormalMap" accept="image/png,image/jpeg,image/webp"></label><label>背面法线<input type="file" data-wall-map="faceBNormalMap" accept="image/png,image/jpeg,image/webp"></label></div>'+
+   '<div class="props-grid"><label>正面粗糙度<input type="file" data-wall-map="faceARoughnessMap" accept="image/png,image/jpeg,image/webp"></label><label>背面粗糙度<input type="file" data-wall-map="faceBRoughnessMap" accept="image/png,image/jpeg,image/webp"></label></div>'+
+   '<div class="props-grid"><button type="button" data-reset-wall-maps="faceA">清除正面贴图</button><button type="button" data-reset-wall-maps="faceB">清除背面贴图</button></div>'+
    '<label>墙体图层<select id="wall-layer"><option value="structure">主体结构</option><option value="partition">隔断</option><option value="decor">装饰墙</option></select></label>'+
    '<label class="check-row"><input type="checkbox" id="wall-locked" '+(w.locked?'checked':'')+'> 锁定墙体，阻止编辑</label>'+
    '<p class="muted">墙面颜色和图层独立保存；锁定后不能修改墙体几何。'+
@@ -275,6 +279,22 @@ function inspect(){
    input.value=wall[input.dataset.wallFacePattern]??doc.wallPattern??'paint';
    input.addEventListener('change',()=>change(()=>{doc.walls.find(w=>w.id===id)[input.dataset.wallFacePattern]=input.value;}));
   });
+  panel.querySelectorAll('[data-wall-map]').forEach(input=>input.addEventListener('change',()=>{
+   const file=input.files?.[0],key=input.dataset.wallMap;input.value='';
+   if(!file)return;
+   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>600000){notify('贴图仅支持不超过 600KB 的 PNG/JPEG/WebP');return;}
+   const reader=new FileReader();
+   reader.onload=()=>{
+    if(typeof reader.result!=='string')return;
+    if(change(()=>{const w=doc.walls.find(w=>w.id===id);if(!w)throw Error('墙体不存在');w[key]=reader.result;}))notify('双面贴图已保存');
+   };
+   reader.onerror=()=>notify('贴图读取失败');
+   reader.readAsDataURL(file);
+  }));
+  panel.querySelectorAll('[data-reset-wall-maps]').forEach(button=>button.addEventListener('click',()=>{
+   const prefix=button.dataset.resetWallMaps;
+   if(change(()=>{const w=doc.walls.find(w=>w.id===id);delete w[prefix+'NormalMap'];delete w[prefix+'RoughnessMap'];}))notify('该墙面贴图已清除');
+  }));
   panel.querySelectorAll('[data-wall-color]').forEach(input=>input.addEventListener('change',()=>change(()=>{
    doc.walls.find(w=>w.id===id)[input.dataset.wallColor]=input.value;
   })));
@@ -986,6 +1006,16 @@ function renderThree(){
   faceB.roughness=wall.faceBRoughness??faceB.roughness;
   faceA.metalness=wall.faceAMetalness??0;
   faceB.metalness=wall.faceBMetalness??0;
+  for(const [mat,prefix,repeat] of [[faceA,'faceA',wall.faceARepeat??doc.textureRepeat??3],[faceB,'faceB',wall.faceBRepeat??doc.textureRepeat??3]]){
+   for(const [key,slot] of [['NormalMap','normalMap'],['RoughnessMap','roughnessMap']]){
+    const source=wall[prefix+key];if(!source)continue;
+    const texture=new THREE.TextureLoader().load(source);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(repeat,repeat);
+    texture.colorSpace=THREE.NoColorSpace;
+    mat[slot]=texture;
+   }
+   mat.needsUpdate=true;
+  }
   for(const face of [faceA,faceB]){
    face.transparent=fadeWall;face.opacity=fadeWall?.2:1;face.depthWrite=!fadeWall;face.side=THREE.DoubleSide;
   }
