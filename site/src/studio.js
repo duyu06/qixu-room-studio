@@ -670,6 +670,7 @@ function library(search=''){
    b.draggable=true;b.dataset.furnitureType=type;
    b.title='点击添加，或拖动到 2D 户型图精准放置';
    b.addEventListener('dragstart',e=>{
+     window.qixuDraggingFurniture=type;
      e.dataTransfer.setData('application/x-qixu-furniture',type);
      e.dataTransfer.setData('text/plain',type);
      e.dataTransfer.effectAllowed='copy';
@@ -683,28 +684,45 @@ function library(search=''){
   });
 }
 const planSvg=$('plan-svg');
+let furnitureDragPreview=null;
+function clearFurniturePreview(){furnitureDragPreview?.remove();furnitureDragPreview=null;planSvg.classList.remove('furniture-drop-active');}
+function insideFurnitureBounds(point,type){
+ const f=FURNITURE[type];
+ return point&&Math.abs(point[0])+f.w/2<=doc.width/2&&Math.abs(point[1])+f.d/2<=doc.depth/2;
+}
 planSvg.addEventListener('dragover',e=>{
  const valid=[...e.dataTransfer.types].includes('application/x-qixu-furniture');
  if(!valid)return;
  e.preventDefault();e.dataTransfer.dropEffect='copy';
+ const type=e.dataTransfer.getData('application/x-qixu-furniture')||window.qixuDraggingFurniture;
+ if(!FURNITURE[type])return;
+ const point=screenPoint(e);if(!point)return;
+ if(!furnitureDragPreview){
+  furnitureDragPreview=el('rect',{class:'furniture-drop-preview','pointer-events':'none'});
+  preview.append(furnitureDragPreview);
+ }
+ const f=FURNITURE[type],validPosition=insideFurnitureBounds(point,type);
+ for(const [key,value] of Object.entries({x:point[0]-f.w/2,y:point[1]-f.d/2,width:f.w,height:f.d,rx:.06}))
+  furnitureDragPreview.setAttribute(key,value);
+ furnitureDragPreview.classList.toggle('invalid',!validPosition);
+ planSvg.classList.add('furniture-drop-active');
 });
+planSvg.addEventListener('dragleave',e=>{if(!planSvg.contains(e.relatedTarget))clearFurniturePreview();});
 planSvg.addEventListener('drop',e=>{
  const type=e.dataTransfer.getData('application/x-qixu-furniture');
  if(!Object.prototype.hasOwnProperty.call(FURNITURE,type))return;
- e.preventDefault();
+ e.preventDefault();clearFurniturePreview();
  const position=screenPoint(e);if(!position)return;
  const template=FURNITURE[type];
- if(Math.abs(position[0])>doc.width/2||Math.abs(position[1])>doc.depth/2){
-   notify('请将家具放入户型范围内');return;
- }
+ if(!insideFurnitureBounds(position,type)){notify('家具不能超出户型边界，请在房间内放置');return;}
  const didAdd=change(()=>{
    const f=addFurniture(doc,type);
-   f.x=clamp(Number(position[0].toFixed(2)),-doc.width/2+f.width/2,doc.width/2-f.width/2);
-   f.z=clamp(Number(position[1].toFixed(2)),-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
+   f.x=Number(position[0].toFixed(2));f.z=Number(position[1].toFixed(2));
    selection={kind:'furniture',id:f.id};
  });
  if(didAdd){toolMode('select');notify('已放置'+template.label+'，可直接拖动或修改尺寸');}
 });
+document.addEventListener('dragend',()=>{window.qixuDraggingFurniture=null;clearFurniturePreview();});
 $('model-search').addEventListener('input',e=>library(e.target.value.trim()));
 document.addEventListener('keydown',e=>{
  if(touring){if(e.key==='Escape')toggleTour();return;}
