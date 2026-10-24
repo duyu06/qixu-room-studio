@@ -477,3 +477,19 @@ test('per-wall thickness and height edit through property inspector and sync to 
  await page.locator('[data-view="split"]').click();
  await expect(page.locator('#three-viewport canvas')).toBeVisible();
 });
+
+test('wall face colors layer and lock are editable without leaving 2D 3D workspace',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-wall-id]').first().dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:270});
+ await expect(page.locator('#wall-layer')).toBeVisible();
+ await page.locator('#wall-layer').selectOption('decor');
+ await page.locator('[data-wall-color="faceAColor"]').fill('#bbaacc');
+ await page.locator('[data-wall-color="faceAColor"]').dispatchEvent('change');
+ await page.locator('#wall-locked').check();
+ await expect(page.locator('#wall-locked')).toBeChecked();
+ await page.locator('[data-wall-layer-visible="decor"]').uncheck();
+ await expect(page.locator('[data-wall-layer-visible="decor"]')).not.toBeChecked();
+ await page.locator('[data-wall-layer-visible="decor"]').check();
+ await page.locator('[data-view="split"]').click();
+ await expect(page.locator('#three-viewport canvas')).toBeVisible();
+});
