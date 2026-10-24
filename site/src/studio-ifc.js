@@ -44,7 +44,7 @@ export async function parseIfcWallPlan(buffer){
    let low=Infinity,high=-Infinity;
    for(const p of pts){const t=(p[0]-center[0])*ux+(p[1]-center[1])*uy;low=Math.min(low,t);high=Math.max(high,t);}
    if(high-low<.2){unsupported.push(flat.expressID);return;}
-   walls.push({id:'ifc-'+flat.expressID,ifcExpressId:flat.expressID,layer:'IFC_WALL',
+   walls.push({id:'ifc-'+flat.expressID,ifcExpressId:flat.expressID,layer:'structure',
      a:[center[0]+low*ux,center[1]+low*uy],b:[center[0]+high*ux,center[1]+high*uy]});
   },true);
   if(!walls.length)throw Error('IFC 中没有可转换的实体墙体；未修改当前户型');
