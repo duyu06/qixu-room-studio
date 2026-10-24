@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
-import {snapFurniture,snapFurnitureToWalls} from './studio-alignment.js';
+import {snapFurniture,snapFurnitureToWalls,alignFurniture,distributeFurniture} from './studio-alignment.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -25,6 +25,8 @@ let demoXray=Boolean(demoInfo);
 const svg=$('plan-svg'),world=$('world'),preview=$('preview-layer');
 let doc=createProject(),selection=null,tool='select',view='2d',zoom=1;
 let history=[],future=[],anchor=null,current=null,drag=null,alignmentGuides=[];
+const selectedFurnitureIds=new Set();
+function updateBatchSelection(){const indicator=$('batch-selection-count');if(indicator)indicator.textContent=selectedFurnitureIds.size+' 件家具已选中 · Shift+点击添加或取消';}
 let scene,renderer,camera,orbit,content,ready=false,toastTimer;
 let lastSceneKey=null,lastStructureKey=null,sceneRebuilds=0;
 const furnitureMeshes=new Map();
@@ -90,8 +92,8 @@ function change(fn){
  catch(e){doc=old;notify(e.message);stat('操作取消：'+e.message);return false;}
  history.push(old);if(history.length>50)history.shift();future=[];refresh();return true;
 }
-function goBack(){if(!history.length)return;future.push(copy());doc=history.pop();selection=null;anchor=null;refresh();}
-function goForward(){if(!future.length)return;history.push(copy());doc=future.pop();selection=null;anchor=null;refresh();}
+function goBack(){if(!history.length)return;future.push(copy());doc=history.pop();selectedFurnitureIds.clear();updateBatchSelection();selection=null;anchor=null;refresh();}
+function goForward(){if(!future.length)return;history.push(copy());doc=future.pop();selectedFurnitureIds.clear();updateBatchSelection();selection=null;anchor=null;refresh();}
 function useDoc(next,message){
  const error=validateProject(next);if(error)throw Error(error);
  doc=structuredClone(next);history=[];future=[];selection=null;anchor=null;zoom=1;refresh();fit();notify(message);
@@ -187,7 +189,7 @@ function draw(){
    const g=el('g',{transform:'translate('+f.x+' '+f.z+') rotate('+(f.rotation*180/Math.PI)+')',
      'data-furniture-id':f.id});
    g.append(el('rect',{x:-f.width/2,y:-f.depth/2,width:f.width,height:f.depth,rx:.06,
-     class:'furniture-rect'+(selection?.id===f.id?' selected':'')+(collisionIds.has(f.id)?' collision':'')}));
+     class:'furniture-rect'+(selectedFurnitureIds.has(f.id)||selection?.id===f.id?' selected':'')+(collisionIds.has(f.id)?' collision':'')}));
    g.append(el('text',{x:0,y:.06,class:'furniture-label'},FURNITURE[f.type].label));
    if(selection?.id===f.id&&selection.kind==='furniture'){
      const handleY=-f.depth/2-.40;
@@ -281,7 +283,11 @@ function inspect(){
    width:f.width,depth:f.depth,height:f.height,rotation:f.rotation});selection={kind:'furniture',id:n.id};});
  });
 }
-function picked(kind,id){selection={kind,id};draw();inspect();$('three-viewport').dataset.selectedId=id;}
+function picked(kind,id,additive=false){
+ if(kind==='furniture'){if(!additive)selectedFurnitureIds.clear();if(additive&&selectedFurnitureIds.has(id))selectedFurnitureIds.delete(id);else selectedFurnitureIds.add(id);}
+ else selectedFurnitureIds.clear();
+ selection={kind,id};updateBatchSelection();draw();inspect();$('three-viewport').dataset.selectedId=id;
+}
 svg.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=screenPoint(e);if(!p)return;
@@ -338,7 +344,7 @@ svg.addEventListener('pointerdown',e=>{
  }
  if(furniture){
   const f=doc.furniture.find(x=>x.id===furniture.dataset.furnitureId);
-  if(f){picked('furniture',f.id);drag={id:f.id,before:copy(),p,from:[f.x,f.z],moved:false};
+  if(f){picked('furniture',f.id,e.shiftKey);if(e.shiftKey){e.preventDefault();return;}drag={id:f.id,before:copy(),p,from:[f.x,f.z],moved:false};
    try{svg.setPointerCapture(e.pointerId);}catch{}}
  }else if(opening)picked('opening',opening.dataset.openingId);
  else if(wall)picked('wall',wall.dataset.wallId);
@@ -728,6 +734,14 @@ planSvg.addEventListener('drop',e=>{
  if(didAdd){toolMode('select');notify('已放置'+template.label+'，可直接拖动或修改尺寸');}
 });
 document.addEventListener('dragend',()=>{window.qixuDraggingFurniture=null;clearFurniturePreview();});
+document.querySelectorAll('[data-batch]').forEach(button=>button.addEventListener('click',()=>{
+ const ids=[...selectedFurnitureIds].filter(id=>doc.furniture.some(f=>f.id===id));
+ const mode=button.dataset.batch;
+ if(ids.length<(mode.startsWith('space')?3:2)){notify(mode.startsWith('space')?'至少选择三件家具':'至少选择两件家具');return;}
+ const ok=change(()=>{if(mode.startsWith('align'))alignFurniture(doc,ids,mode.endsWith('x')?'x':'z');else distributeFurniture(doc,ids,mode.endsWith('x')?'x':'z');});
+ if(ok){updateBatchSelection();notify('已完成批量调整，可撤销');}
+}));
+$('clear-batch-selection').addEventListener('click',()=>{selectedFurnitureIds.clear();selection=null;updateBatchSelection();draw();inspect();});
 $('model-search').addEventListener('input',e=>library(e.target.value.trim()));
 document.addEventListener('keydown',e=>{
  if(touring){if(e.key==='Escape')toggleTour();return;}
