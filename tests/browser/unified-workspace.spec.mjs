@@ -417,3 +417,17 @@ test('existing 3D auto-sync needs no generation button and geometry checks live 
  await page.locator('[data-panel="analysis"]').click();
  await expect(page.locator('#studio-analysis-result')).toContainText('三维几何检查');
 });
+
+test('drag a furniture catalog item directly into the 2D plan without changing page',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="library"]').click();
+ const item=page.locator('[data-furniture-type="chair"]');
+ await expect(item).toBeVisible();
+ const before=await page.locator('[data-furniture-id]').count();
+ await item.dragTo(page.locator('#plan-svg'),{targetPosition:{x:350,y:270}});
+ await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
+ await expect(page.locator('#plan-svg')).toBeVisible();
+ await expect(page).toHaveURL(/studio.html\?template=sunlit/);
+ await page.reload();
+ await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
+});
