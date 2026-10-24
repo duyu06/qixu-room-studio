@@ -3,7 +3,6 @@ import {createProceduralFurniture} from './studio-procedural-furniture.js';
 import {floorMaterial,wallMaterial} from './studio-materials.js';
 import {makeAirflowOverlay} from './studio-airflow.js';
 import {snapFurniture} from './studio-alignment.js';
-import {inferModel} from './studio-inference.js';
 import {evaluateVentilation} from './studio-flow-model.js';
 import {buildCfdJob} from './studio-cfd-job.js';
 import {cfdSurfaceStl} from './studio-cfd-stl.js';
@@ -401,17 +400,6 @@ document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',()=>sidebar(b.dataset.panel)));
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 for(const name of ['show-grid','show-measures'])$(name).addEventListener('change',draw);
-$('infer-3d-model').addEventListener('click',()=>{
- try{
-  const report=inferModel(doc);
-  const summary='推算 '+report.walls+' 段墙、'+report.openings+' 处门窗、'+report.furniture+' 件家具；墙高 '+report.wallHeight.toFixed(2)+'m · 体积约 '+report.approximateVolume.toFixed(1)+'m³';
-  $('inferred-model-report').textContent=summary+
-    (report.issues.length?'；需检查：'+report.issues.join('、'):'；几何检查未发现明显异常')+
-    '。未知梁柱、楼板与施工构造不会自动生成。';
-  setView('split');
-  stat('已基于现有户型生成 3D 预览 · 推算结果不代表建筑测绘');
- }catch(error){notify('推算建模失败：'+error.message);}
-});
 $('fit-view').addEventListener('click',fit);$('reset-camera').addEventListener('click',fit);
 let panTool=false;
 function updateCameraTool(){
