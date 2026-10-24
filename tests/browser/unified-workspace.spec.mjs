@@ -451,3 +451,18 @@ test('selected furniture can be grouped and ungrouped without losing project sta
  await page.locator('#ungroup-furniture').click();
  await expect(page.locator('#batch-selection-count')).toContainText('2 件');
 });
+
+test('group rotation and batch duplicate actions preserve original furniture IDs',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="library"]').click();
+ const furniture=page.locator('[data-furniture-id] rect');
+ await furniture.nth(0).dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:260});
+ await furniture.nth(1).dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:310,clientY:270,shiftKey:true});
+ await expect(page.locator('#batch-selection-count')).toContainText('2 件');
+ await expect(page.locator('#rotate-group-right')).toBeVisible();
+ await page.locator('#group-furniture').click();
+ await page.locator('#rotate-group-right').click();
+ const prior=await page.locator('[data-furniture-id]').count();
+ await page.locator('#duplicate-furniture-selection').click();
+ await expect(page.locator('[data-furniture-id]')).toHaveCount(prior+2);
+});
