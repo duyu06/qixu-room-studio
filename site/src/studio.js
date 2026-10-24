@@ -165,7 +165,7 @@ function draw(){
  const collisionIds=new Set(furnitureDiagnostics(doc).map(x=>x.id));
  for(const wall of doc.walls){
    const picked=selection?.id===wall.id;
-   world.append(line(...wall.a,...wall.b,{class:'wall-base'+(picked?' selected':''),'stroke-width':doc.thickness}));
+   world.append(line(...wall.a,...wall.b,{class:'wall-base'+(picked?' selected':''),'stroke-width':wall.thickness??doc.thickness}));
    world.append(line(...wall.a,...wall.b,{class:'wall-click','data-wall-id':wall.id}));
    if($('show-measures').checked){
      const mid=interpolated(wall,.5),L=length(wall),dx=wall.b[0]-wall.a[0],dy=wall.b[1]-wall.a[1];
@@ -230,8 +230,13 @@ function inspect(){
   '<p class="muted">当前户型为室内规划示意，不自动判定承重墙或建筑安全。</p>';
  }else if(selection.kind==='wall'){
   const w=doc.walls.find(x=>x.id===selection.id);if(!w){selection=null;return inspect();}
-  html='<div class="label">实体墙</div>'+field('墙长（米）','wallLength',length(w).toFixed(2),.3,60)+
-   '<p class="muted">调整长度时固定起点和墙体方向。</p><div class="props-actions"><button data-delete class="danger">删除墙体</button></div>';
+  html='<div class="label">实体墙 · 独立参数</div><div class="props-grid">'+
+   field('墙长（米）','wallLength',length(w).toFixed(2),.3,60)+
+   field('角度（°）','wallAngle',(Math.atan2(w.b[1]-w.a[1],w.b[0]-w.a[0])*180/Math.PI).toFixed(1),-360,360,1)+
+   field('厚度（米）','wallThickness',w.thickness??doc.thickness,.06,.6,.01)+
+   field('高度（米）','wallHeightSingle',w.height??doc.wallHeight,2,6,.1)+'</div>'+
+   '<div class="props-grid">'+field('起点 X','wallAX',w.a[0].toFixed(2),-100,100)+field('起点 Z','wallAZ',w.a[1].toFixed(2),-100,100)+'</div>'+
+   '<p class="muted">独立高度与厚度覆盖全屋默认值；长度、角度及起点变化会同步更新 2D/3D。门窗边界自动校验。</p><div class="props-actions"><button data-delete class="danger">删除墙体</button></div>';
  }else if(selection.kind==='opening'){
   const o=doc.openings.find(x=>x.id===selection.id);if(!o){selection=null;return inspect();}
   html='<div class="label">'+(o.kind==='door'?'门洞':'窗户')+'</div><div class="props-grid">'+
@@ -259,6 +264,15 @@ function inspect(){
    if(selection.kind==='opening'){
     const o=doc.openings.find(x=>x.id===selection.id),map={openWidth:'width',openHeight:'height',openSill:'sill'};
     setOpeningDimension(doc,o,{[map[key]]:val});return;
+   }
+   if(selection.kind==='wall'&&['wallThickness','wallHeightSingle','wallAngle','wallAX','wallAZ'].includes(key)){
+    const w=doc.walls.find(x=>x.id===selection.id),L=length(w);
+    if(key==='wallThickness')w.thickness=val;
+    if(key==='wallHeightSingle')w.height=val;
+    if(key==='wallAngle'){const theta=val*Math.PI/180;w.b=[w.a[0]+Math.cos(theta)*L,w.a[1]+Math.sin(theta)*L];}
+    if(key==='wallAX'){const delta=val-w.a[0];w.a[0]=val;w.b[0]+=delta;}
+    if(key==='wallAZ'){const delta=val-w.a[1];w.a[1]=val;w.b[1]+=delta;}
+    return;
    }
    if(selection.kind==='wall'&&key==='wallLength'){
     const w=doc.walls.find(x=>x.id===selection.id),old=length(w);
@@ -913,7 +927,7 @@ function renderThree(){
   material.transparent=fadeWall;material.opacity=fadeWall?.2:1;
   material.depthWrite=!fadeWall;material.side=THREE.DoubleSide;
   for(const piece of wallPieces(doc,wall)){
-   buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,doc.thickness,
+   buildBox(group,material,piece.end-piece.start,piece.top-piece.bottom,wall.thickness??doc.thickness,
      (piece.start+piece.end)/2,(piece.top+piece.bottom)/2,0);
   }
   content.add(group);
