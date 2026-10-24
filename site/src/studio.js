@@ -1049,7 +1049,12 @@ function renderThree(){
   ref.rotation.x=-Math.PI/2;ref.position.y=.026;content.add(ref);
  }
  for(const junction of wallJunctions({...doc,walls:doc.walls.filter(w=>visibleWallLayers.has((w.layer==='IFC_WALL'?'structure':w.layer||'structure')))})){
-  const material=wallMaterial(doc.wallColor,doc.wallPattern||'paint',doc.wallTexture||null,doc.textureRepeat||3);
+  const source=doc.walls.find(w=>w.id===junction.primaryWallId);
+  const tone=source?.faceAColor||({exterior:'#e7ded2',interior:doc.wallColor,partition:'#dceae8'}[source?.wallType]||doc.wallColor);
+  const material=wallMaterial(tone,source?.faceAPattern||doc.wallPattern||'paint',
+   doc.wallTexture||null,source?.faceARepeat??doc.textureRepeat??3);
+  material.roughness=source?.faceARoughness??material.roughness;
+  material.metalness=source?.faceAMetalness??0;
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(junction.thickness,junction.height,junction.thickness),material);
   mesh.position.set(junction.x,junction.height/2,junction.z);mesh.castShadow=true;mesh.receiveShadow=true;content.add(mesh);
  }
