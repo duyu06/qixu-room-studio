@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {moveWallJoint,translateWallWithJoints} from '../site/src/studio-wall-joints.js';
+const p={walls:[{id:'w1',a:[0,0],b:[2,0]},{id:'w2',a:[2,0],b:[2,2]},{id:'w3',a:[2,2],b:[4,2]}]};
+assert.equal(moveWallJoint(p,'w1','b',[3,0]),2);
+assert.deepEqual(p.walls[1].a,[3,0]);
+assert.deepEqual(p.walls[2].a,[2,2]);
+translateWallWithJoints(p,'w2',1,1);
+assert.deepEqual(p.walls[0].b,[4,1]);
+assert.deepEqual(p.walls[1].a,[4,1]);
+assert.deepEqual(p.walls[1].b,[3,3]);
+assert.deepEqual(p.walls[2].a,[3,3]);
+assert.throws(()=>moveWallJoint(p,'missing','a',[0,0]),/无效/);
+console.log('Connected-wall joint propagation passed');
