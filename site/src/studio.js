@@ -427,12 +427,8 @@ svg.addEventListener('pointermove',e=>{
    const w=doc.walls.find(x=>x.id===drag.id);if(!w||w.locked)return;
    const previous=[...w[drag.side]];
    const snapped=snapPosition(next,doc,.1,{excludePoint:drag.from,excludeWallId:drag.id,disable:e.altKey});
-   for(const segment of doc.walls){
-     for(const side of ['a','b']){
-       if(Math.hypot(segment[side][0]-previous[0],segment[side][1]-previous[1])<.011)
-         segment[side]=[...snapped];
-     }
-   }
+   try{moveWallJoint(doc,w.id,drag.side,snapped);}
+   catch(error){stat(error.message);return;}
    drag.moved=true;draw();stat(e.altKey?'自由拖动（Alt 暂停吸附）':'墙端点已按端点／墙线／网格吸附');e.preventDefault();return;
  }
  const f=doc.furniture.find(x=>x.id===drag.id);if(!f)return;
@@ -858,7 +854,9 @@ document.addEventListener('keydown',e=>{
  if(cmd&&e.key.toLowerCase()==='y'){e.preventDefault();goForward();return;}
  if(e.key==='Escape'){if(placingWindSource){e.preventDefault();finishWindPlacement(false);}else toolMode('select');return;}
  if(['Delete','Backspace'].includes(e.key)&&selection){
-  e.preventDefault();change(()=>deleteObject(doc,selection.id));selection=null;refresh();return;
+  e.preventDefault();
+  if(selection.kind==='wall'&&doc.walls.find(w=>w.id===selection.id)?.locked){notify('墙体已锁定，请先解锁');return;}
+  change(()=>deleteObject(doc,selection.id));selection=null;refresh();return;
  }
  if(cmd&&e.key.toLowerCase()==='d'&&selection?.kind==='furniture'){
    e.preventDefault();
