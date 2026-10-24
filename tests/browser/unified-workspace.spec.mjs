@@ -432,3 +432,22 @@ test('drag a furniture catalog item directly into the 2D plan without changing p
  await page.reload();
  await expect(page.locator('[data-furniture-id]')).toHaveCount(before+1);
 });
+
+test('selected furniture can be grouped and ungrouped without losing project state',async({page})=>{
+ await page.goto('/studio.html?template=sunlit&view=2d');
+ await page.locator('[data-panel="library"]').click();
+ const furniture=page.locator('[data-furniture-id] rect');
+ await furniture.nth(0).dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:300,clientY:260});
+ await furniture.nth(1).dispatchEvent('pointerdown',{button:0,pointerId:1,clientX:310,clientY:270,shiftKey:true});
+ await expect(page.locator('#batch-selection-count')).toContainText('2 件');
+ await page.locator('#group-furniture').click();
+ const groups=await page.evaluate(()=>{
+  const key=Object.keys(localStorage).find(k=>k.startsWith('qixu-studio')&&k.includes('sunlit'));
+  if(!key)return [];
+  return JSON.parse(localStorage.getItem(key)).furniture.filter(f=>f.groupId).map(f=>f.groupId);
+ });
+ expect(groups.length).toBeGreaterThanOrEqual(2);
+ expect(groups[0]).toBe(groups[1]);
+ await page.locator('#ungroup-furniture').click();
+ await expect(page.locator('#batch-selection-count')).toContainText('2 件');
+});
