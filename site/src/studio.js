@@ -926,7 +926,7 @@ function buildBox(parent,mat,w,h,d,x,y,z){
 function disposeGroup(group){
  group.traverse(o=>{
    o.geometry?.dispose();
-   if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{m.map?.dispose();m.dispose();});
+   if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{for(const key of ['map','normalMap','roughnessMap'])m[key]?.dispose();m.dispose();});
  });
 }
 function renderThree(){
