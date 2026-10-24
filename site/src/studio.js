@@ -284,7 +284,13 @@ function inspect(){
  });
 }
 function picked(kind,id,additive=false){
- if(kind==='furniture'){if(!additive)selectedFurnitureIds.clear();if(additive&&selectedFurnitureIds.has(id))selectedFurnitureIds.delete(id);else selectedFurnitureIds.add(id);}
+ if(kind==='furniture'){
+  const item=doc.furniture.find(f=>f.id===id);
+  if(!additive)selectedFurnitureIds.clear();
+  const members=item?.groupId?doc.furniture.filter(f=>f.groupId===item.groupId).map(f=>f.id):[id];
+  if(additive&&members.every(member=>selectedFurnitureIds.has(member)))members.forEach(member=>selectedFurnitureIds.delete(member));
+  else members.forEach(member=>selectedFurnitureIds.add(member));
+ }
  else selectedFurnitureIds.clear();
  selection={kind,id};updateBatchSelection();draw();inspect();$('three-viewport').dataset.selectedId=id;
 }
@@ -344,7 +350,9 @@ svg.addEventListener('pointerdown',e=>{
  }
  if(furniture){
   const f=doc.furniture.find(x=>x.id===furniture.dataset.furnitureId);
-  if(f){picked('furniture',f.id,e.shiftKey);if(e.shiftKey){e.preventDefault();return;}drag={id:f.id,before:copy(),p,from:[f.x,f.z],moved:false};
+  if(f){picked('furniture',f.id,e.shiftKey);if(e.shiftKey){e.preventDefault();return;}
+   const members=f.groupId?doc.furniture.filter(item=>item.groupId===f.groupId):[f];
+   drag={id:f.id,before:copy(),p,from:[f.x,f.z],members:members.map(item=>({id:item.id,x:item.x,z:item.z})),moved:false};
    try{svg.setPointerCapture(e.pointerId);}catch{}}
  }else if(opening)picked('opening',opening.dataset.openingId);
  else if(wall)picked('wall',wall.dataset.wallId);
@@ -387,8 +395,20 @@ svg.addEventListener('pointermove',e=>{
  const wallSnap=(!e.altKey&&$('snap-walls').checked)?snapFurnitureToWalls(doc,f.id,aligned.x,aligned.z):{...aligned,guides:[]};
  aligned.x=wallSnap.x;aligned.z=wallSnap.z;
  alignmentGuides=[...aligned.guides,...wallSnap.guides];
- f.x=clamp(aligned.x,-doc.width/2+f.width/2,doc.width/2-f.width/2);
- f.z=clamp(aligned.z,-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
+ if(drag.members?.length>1){
+   let dx=aligned.x-drag.from[0],dz=aligned.z-drag.from[1];
+   const members=drag.members.map(m=>({origin:m,item:doc.furniture.find(item=>item.id===m.id)})).filter(m=>m.item);
+   const width=doc.width/2,depth=doc.depth/2;
+   const lowX=Math.max(...members.map(({origin,item})=>-width+item.width/2-origin.x));
+   const highX=Math.min(...members.map(({origin,item})=>width-item.width/2-origin.x));
+   const lowZ=Math.max(...members.map(({origin,item})=>-depth+item.depth/2-origin.z));
+   const highZ=Math.min(...members.map(({origin,item})=>depth-item.depth/2-origin.z));
+   dx=clamp(dx,lowX,highX);dz=clamp(dz,lowZ,highZ);
+   for(const {origin,item} of members){item.x=origin.x+dx;item.z=origin.z+dz;}
+ }else{
+   f.x=clamp(aligned.x,-doc.width/2+f.width/2,doc.width/2-f.width/2);
+   f.z=clamp(aligned.z,-doc.depth/2+f.depth/2,doc.depth/2-f.depth/2);
+ }
  drag.moved=true;draw();
  const collisions=furnitureDiagnostics(doc).filter(issue=>issue.id===f.id);
  if(collisions.length)stat('⚠ 家具与墙体或其他家具碰撞；可继续移动调整');
@@ -741,6 +761,21 @@ document.querySelectorAll('[data-batch]').forEach(button=>button.addEventListene
  const ok=change(()=>{if(mode.startsWith('align'))alignFurniture(doc,ids,mode.endsWith('x')?'x':'z');else distributeFurniture(doc,ids,mode.endsWith('x')?'x':'z');});
  if(ok){updateBatchSelection();notify('已完成批量调整，可撤销');}
 }));
+$('group-furniture').addEventListener('click',()=>{
+ const ids=[...selectedFurnitureIds].filter(id=>doc.furniture.some(f=>f.id===id));
+ if(ids.length<2){notify('组合至少需要两件家具');return;}
+ const groupId='grp-'+Math.random().toString(36).slice(2,10);
+ if(change(()=>{for(const item of doc.furniture)if(ids.includes(item.id))item.groupId=groupId;})){
+   updateBatchSelection();notify('已组合 '+ids.length+' 件家具，可整体拖动');
+ }
+});
+$('ungroup-furniture').addEventListener('click',()=>{
+ const groups=new Set(doc.furniture.filter(item=>selectedFurnitureIds.has(item.id)&&item.groupId).map(item=>item.groupId));
+ if(!groups.size){notify('请先选中已有组合');return;}
+ if(change(()=>{for(const item of doc.furniture)if(groups.has(item.groupId))delete item.groupId;})){
+   updateBatchSelection();notify('所选组合已解组');
+ }
+});
 $('clear-batch-selection').addEventListener('click',()=>{selectedFurnitureIds.clear();selection=null;updateBatchSelection();draw();inspect();});
 $('model-search').addEventListener('input',e=>library(e.target.value.trim()));
 document.addEventListener('keydown',e=>{
