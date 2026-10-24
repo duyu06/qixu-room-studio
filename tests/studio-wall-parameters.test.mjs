@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {createProject,validateProject,wallPieces} from '../site/src/studio-model.js';
+const doc=createProject(),wall=doc.walls[4];
+wall.thickness=.3;wall.height=3.5;
+assert.equal(validateProject(doc),null);
+const solids=wallPieces(doc,wall);
+assert.ok(solids.some(s=>Math.abs(s.top-3.5)<1e-9));
+wall.height=2;
+assert.match(validateProject(doc),/门窗高于/);
+wall.height=3.5;wall.thickness=.8;
+assert.match(validateProject(doc),/厚度/);
+console.log('Per-wall thickness height and opening safety validated');
