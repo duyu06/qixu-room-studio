@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {snapFurniture,alignFurniture,snapFurnitureToWalls} from '../site/src/studio-alignment.js';
+import {snapFurniture,alignFurniture,snapFurnitureToWalls,distributeFurniture} from '../site/src/studio-alignment.js';
 const project={furniture:[
  {id:'a',x:1,z:1,width:1,depth:.6},
  {id:'b',x:3,z:3,width:1.5,depth:1},
@@ -25,3 +25,9 @@ const vertical=snapFurnitureToWalls(wallDoc,'sofa',0,-1.5);
 assert.ok(Math.abs(vertical.z-(-1.51))<.00001);
 assert.equal(vertical.guides[0].wallId,'w2');
 assert.equal(snapFurnitureToWalls(wallDoc,'sofa',0,0).guides.length,0);
+
+const equal={furniture:[{id:'a',x:0,z:0},{id:'b',x:7,z:1},{id:'c',x:2,z:2},{id:'d',x:9,z:3}]};
+distributeFurniture(equal,['a','b','c','d'],'x');
+assert.equal(equal.furniture.find(f=>f.id==='c').x,3);
+assert.equal(equal.furniture.find(f=>f.id==='b').x,6);
+assert.throws(()=>distributeFurniture(equal,['a','b'],'x'),/三件/);
