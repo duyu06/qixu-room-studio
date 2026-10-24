@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {captureFacePreset,applyFacePreset} from '../site/src/studio-material-library.js';
+const a={faceAColor:'#abcdef',faceAPattern:'plaster',faceARoughness:.4,faceANormalMap:'data:image/png;base64,a',faceBColor:'#123456'};
+const preset=captureFacePreset(a,'faceA');
+const b={faceBColor:'#eeeeee',faceBMetalness:.8};
+applyFacePreset(b,'faceB',preset);
+assert.equal(b.faceBColor,'#abcdef');
+assert.equal(b.faceBPattern,'plaster');
+assert.equal(b.faceBRoughness,.4);
+assert.equal(b.faceBNormalMap,a.faceANormalMap);
+assert.equal(b.faceBMetalness,undefined);
+assert.equal(a.faceBColor,'#123456');
+assert.throws(()=>captureFacePreset(a,'bad'),/方向/);
+console.log('Reusable wall material preset tests passed');
