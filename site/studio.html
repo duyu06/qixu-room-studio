@@ -110,6 +110,7 @@
     <p class="hint">在右侧选中墙体，可将正面或背面材质保存为预设，再应用到其他墙面。</p>
     <div class="action-grid"><button type="button" id="save-face-a-preset">保存正面材质</button><button type="button" id="save-face-b-preset">保存背面材质</button></div>
     <div class="props-grid"><label>搜索预设<input id="material-preset-search" type="search" placeholder="名称或材质类型"></label><label>分类<select id="material-preset-category"><option value="">全部分类</option><option value="paint">乳胶漆</option><option value="plaster">灰泥</option><option value="wallpaper">墙纸</option><option value="custom">自定义</option></select></label></div>
+    <p id="material-preset-count" class="material-preset-count" aria-live="polite">显示 0 个材质预设</p>
     <div id="material-preset-gallery" class="material-preset-gallery" aria-label="材质预设列表"></div>
     <p class="hint">将预设卡片拖到 2D 墙线上，应用到墙体正面；按住 Shift 拖放可应用到背面。</p>
     <label>已保存的材质<select id="saved-wall-materials"><option value="">选择材质预设</option></select></label>
