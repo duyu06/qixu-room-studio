@@ -250,7 +250,7 @@ function displayWallPresets(){
   meta.textContent=type+(maps?' · '+maps:'')+' · 粗糙度 '+(values.Roughness??.94);
   card.setAttribute('aria-label',item.name+'，'+meta.textContent+'，点击选中，拖拽到墙体应用');
   card.append(thumb,name,meta);
-  card.addEventListener('click',()=>{select.value=item.id;displayWallPresetHighlight();});
+  card.addEventListener('click',()=>{select.value=item.id;displayWallPresetHighlight();materialStatus('已选择「'+item.name+'」 · 可应用到墙体正面或背面');});
   card.addEventListener('dragstart',e=>{e.dataTransfer.setData('application/x-qixu-material',item.id);e.dataTransfer.effectAllowed='copy';card.classList.add('dragging');});
   card.addEventListener('dragend',()=>{card.classList.remove('dragging');svg.classList.remove('material-drop-ready');});
   gallery.append(card);
@@ -259,6 +259,9 @@ function displayWallPresets(){
  const status=$('material-preset-count');if(status)status.textContent='显示 '+shown+' / '+all.length+' 个材质预设';
  if(!shown){const empty=document.createElement('p');empty.className='material-preset-empty';empty.textContent=all.length?'没有符合筛选条件的材质':'暂无预设。先选中墙体，再保存正面或背面材质。';gallery.append(empty);}
  displayWallPresetHighlight();
+}
+function materialStatus(message){
+ const indicator=$('material-action-status');if(indicator)indicator.textContent=message;
 }
 function displayWallPresetHighlight(){
  $('material-preset-gallery').querySelectorAll('.material-preset-card').forEach(card=>card.classList.toggle('active',card.dataset.materialPresetId===$('saved-wall-materials').value));
@@ -278,7 +281,7 @@ for(const [button,side] of [['apply-preset-face-a','faceA'],['apply-preset-face-
  $(button).addEventListener('click',()=>{
   const wall=chosenWall(),item=readWallPresets().find(x=>x.id===$('saved-wall-materials').value);
   if(!wall||!item){notify('请先选中墙体及材质预设');return;}
-  if(change(()=>applyFacePreset(wall,side,item.values)))notify('材质已应用到墙体'+(side==='faceA'?'正面':'背面'));
+  if(change(()=>applyFacePreset(wall,side,item.values))){const msg='已应用「'+item.name+'」到墙体'+(side==='faceA'?'正面':'背面');materialStatus(msg);notify(msg);}
  });
 }
 $('delete-wall-preset').addEventListener('click',()=>{
@@ -300,7 +303,7 @@ svg.addEventListener('drop',e=>{
  if(!item||!nearest||nearest.distance>.35){notify('请拖到 2D 墙体中心线');return;}
  if(nearest.wall.locked){notify('墙体已锁定，请先解锁');return;}
  const side=e.shiftKey?'faceB':'faceA';
- if(change(()=>{applyFacePreset(nearest.wall,side,item.values);selection={kind:'wall',id:nearest.wall.id};}))notify('材质已应用到墙体'+(side==='faceA'?'正面':'背面'));
+ if(change(()=>{applyFacePreset(nearest.wall,side,item.values);selection={kind:'wall',id:nearest.wall.id};})){const msg='已将「'+item.name+'」应用到墙体'+(side==='faceA'?'正面':'背面');materialStatus(msg);notify(msg);}
 });
 function inspect(){
  const panel=$('property-body');let html='';
