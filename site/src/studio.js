@@ -232,24 +232,32 @@ function displayWallPresets(){
  const select=$('saved-wall-materials'),gallery=$('material-preset-gallery'),previous=select.value;
  const search=$('material-preset-search').value.trim().toLowerCase(),category=$('material-preset-category').value;
  select.replaceChildren(new Option('选择材质预设',''));gallery.replaceChildren();
- for(const item of readWallPresets()){
+ const all=readWallPresets();let shown=0;
+ for(const item of all){
   const values=item.values||{},kind=values.Pattern||'paint',group=['paint','plaster','wallpaper'].includes(kind)?kind:'custom';
   if(category&&category!==group)continue;
   if(search&&!((item.name||'')+' '+kind).toLowerCase().includes(search))continue;
-  select.add(new Option(item.name,item.id));
+  shown++;select.add(new Option(item.name,item.id));
   const card=document.createElement('button');card.type='button';card.className='material-preset-card';card.draggable=true;card.title='拖放到 2D 墙体，Shift 应用背面';
   card.dataset.materialPresetId=item.id;
   const thumb=document.createElement('span');thumb.className='material-preset-thumb';
   thumb.style.backgroundColor=/^#[0-9a-f]{6}$/i.test(values.Color||'')?values.Color:'#e2ddd5';
   thumb.style.backgroundImage=kind==='wallpaper'?'repeating-linear-gradient(90deg,transparent 0 7px,#00000012 8px 9px)':kind==='plaster'?'radial-gradient(circle at 30% 40%,#ffffff72,transparent 55%)':'none';
   const name=document.createElement('span');name.className='material-preset-name';name.textContent=item.name;
-  const meta=document.createElement('small');meta.textContent={paint:'乳胶漆',plaster:'灰泥',wallpaper:'墙纸',custom:'自定义'}[group];
+  const meta=document.createElement('small');meta.className='material-preset-meta';
+  const type={paint:'乳胶漆',plaster:'灰泥',wallpaper:'墙纸',custom:'自定义'}[group];
+  const maps=[values.NormalMap?'法线':'',values.RoughnessMap?'粗糙度贴图':''].filter(Boolean).join(' · ');
+  meta.textContent=type+(maps?' · '+maps:'')+' · 粗糙度 '+(values.Roughness??.94);
+  card.setAttribute('aria-label',item.name+'，'+meta.textContent+'，点击选中，拖拽到墙体应用');
   card.append(thumb,name,meta);
   card.addEventListener('click',()=>{select.value=item.id;displayWallPresetHighlight();});
-  card.addEventListener('dragstart',e=>{e.dataTransfer.setData('application/x-qixu-material',item.id);e.dataTransfer.effectAllowed='copy';});
+  card.addEventListener('dragstart',e=>{e.dataTransfer.setData('application/x-qixu-material',item.id);e.dataTransfer.effectAllowed='copy';card.classList.add('dragging');});
+  card.addEventListener('dragend',()=>{card.classList.remove('dragging');svg.classList.remove('material-drop-ready');});
   gallery.append(card);
  }
  if([...select.options].some(o=>o.value===previous))select.value=previous;
+ const status=$('material-preset-count');if(status)status.textContent='显示 '+shown+' / '+all.length+' 个材质预设';
+ if(!shown){const empty=document.createElement('p');empty.className='material-preset-empty';empty.textContent=all.length?'没有符合筛选条件的材质':'暂无预设。先选中墙体，再保存正面或背面材质。';gallery.append(empty);}
  displayWallPresetHighlight();
 }
 function displayWallPresetHighlight(){
@@ -282,8 +290,10 @@ displayWallPresets();
 $('material-preset-search').addEventListener('input',displayWallPresets);
 $('material-preset-category').addEventListener('change',displayWallPresets);
 $('saved-wall-materials').addEventListener('change',displayWallPresetHighlight);
-svg.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('application/x-qixu-material')){e.preventDefault();e.dataTransfer.dropEffect='copy';}});
+svg.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('application/x-qixu-material')){e.preventDefault();e.dataTransfer.dropEffect='copy';svg.classList.add('material-drop-ready');}});
+svg.addEventListener('dragleave',e=>{if(!svg.contains(e.relatedTarget))svg.classList.remove('material-drop-ready');});
 svg.addEventListener('drop',e=>{
+ svg.classList.remove('material-drop-ready');
  const id=e.dataTransfer.getData('application/x-qixu-material');if(!id)return;
  e.preventDefault();const item=readWallPresets().find(p=>p.id===id);
  const point=screenPoint(e),nearest=point&&nearestWall(doc,point);
