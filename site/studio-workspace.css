@@ -19,3 +19,15 @@
 .material-preset-thumb{display:block;width:42px;height:42px;min-width:42px;border-radius:7px;border:1px solid #0002;background-size:cover}
 .material-preset-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .material-preset-card small{font-size:10px;opacity:.65;white-space:nowrap}
+
+.material-preset-count{font-size:12px;font-weight:650;opacity:.86;margin:9px 0 4px}
+.material-preset-gallery{grid-template-columns:1fr;max-height:340px;gap:9px}
+.material-preset-card{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:5px;min-height:76px;padding:10px 11px;background:var(--surface,#fff);border:1px solid #aabbb5;transition:border-color .12s,box-shadow .12s}
+.material-preset-thumb{grid-column:1;grid-row:1/span 2;width:56px;height:56px;min-width:56px}
+.material-preset-name{grid-column:2;grid-row:1;font-size:14px;font-weight:700;line-height:1.35}
+.material-preset-meta{grid-column:2;grid-row:2;font-size:11px;line-height:1.45;opacity:.85;white-space:normal}
+.material-preset-card:hover,.material-preset-card:focus-visible{border-color:#356d61;box-shadow:0 0 0 2px #356d6130;outline:none}
+.material-preset-card.active{border-color:#216a59;outline:2px solid #216a59;outline-offset:0;background:#e9f4ee}
+.material-preset-card.dragging{opacity:.55}
+.material-preset-empty{font-size:13px;line-height:1.6;padding:16px 12px;border:1px dashed #b7c8bd;border-radius:9px}
+#plan-svg.material-drop-ready{outline:3px dashed #37876c;outline-offset:-5px}
