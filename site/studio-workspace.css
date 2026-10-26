@@ -31,3 +31,17 @@
 .material-preset-card.dragging{opacity:.55}
 .material-preset-empty{font-size:13px;line-height:1.6;padding:16px 12px;border:1px dashed #b7c8bd;border-radius:9px}
 #plan-svg.material-drop-ready{outline:3px dashed #37876c;outline-offset:-5px}
+
+/* Increased readability for material browsing and property editing. */
+.material-action-status{font-size:13px;font-weight:650;line-height:1.6;color:#205846;background:#edf5ef;border:1px solid #a9c8b6;border-radius:9px;padding:10px 12px;margin:12px 0}
+.material-preset-gallery{max-height:420px;gap:11px}
+.material-preset-card{min-height:84px;padding:12px;border-width:1.5px}
+.material-preset-thumb{width:60px;height:60px;min-width:60px}
+.material-preset-card{grid-template-columns:60px minmax(0,1fr)}
+.material-preset-name{font-size:15px;white-space:normal;line-height:1.45}
+.material-preset-meta{font-size:12px;opacity:1;line-height:1.5}
+.material-preset-count{font-size:13px;font-weight:700;opacity:1}
+.material-preset-card.active{outline:3px solid #247358;outline-offset:1px}
+#material-preset-search,#material-preset-category,#saved-wall-materials{min-height:38px}
+#property-body .props-grid label{line-height:1.45}
+#property-body input[type="number"],#property-body select{min-height:35px;font-size:14px}
